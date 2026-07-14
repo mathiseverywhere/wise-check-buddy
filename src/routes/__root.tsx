@@ -77,14 +77,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Prüfstrecke — Vom Papier zur geführten Qualitätskontrolle" },
+      { name: "description", content: "Konzept & Stufenplan für eine geführte Wareneingangsprüfung: AQL-Stichprobe, SAP B1-Anbindung, Tablet-Erfassung. Vom Excel-Pilot zur produktiven App." },
+      { name: "author", content: "Prüfstrecke" },
+      { property: "og:title", content: "Prüfstrecke — Vom Papier zur geführten Qualitätskontrolle" },
+      { property: "og:description", content: "Konzept & Stufenplan für eine geführte Wareneingangsprüfung mit AQL, SAP B1 und Tablet-Erfassung." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
