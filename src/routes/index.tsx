@@ -65,6 +65,7 @@ function Index() {
           </div>
           <nav className="hidden gap-8 font-mono text-[11px] uppercase tracking-[0.22em] text-ink/60 md:flex">
             <a href="#konzept" className="hover:text-ink">01 Konzept</a>
+            <a href="#demo" className="hover:text-ink text-accent">Demo</a>
             <a href="#technik" className="hover:text-ink">02 Technik</a>
             <a href="#organisation" className="hover:text-ink">03 Organisation</a>
             <a href="#stufen" className="hover:text-ink">04 Stufenplan</a>
