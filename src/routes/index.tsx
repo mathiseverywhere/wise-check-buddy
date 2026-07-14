@@ -169,6 +169,21 @@ function Index() {
         </div>
       </Section>
 
+      {/* Interactive Demo */}
+      <Section
+        id="demo"
+        eyebrow="Interaktive Demo — Prüfplatz-Terminal"
+        title="Klick dich einmal durch den Ablauf."
+      >
+        <p className="mb-8 max-w-2xl text-ink/70">
+          Kein echtes SAP, keine echte Datenbank — aber genau der Fluss, den ein
+          Prüfer am Tablet sehen würde. Tippe eine Test-PO ein oder wähle eine der
+          vorgegebenen. Gib absichtlich einen Wert außerhalb der Toleranz ein, um
+          die Eskalation auszulösen.
+        </p>
+        <InspectionDemo />
+      </Section>
+
       {/* 02 — Technik */}
       <Section
         id="technik"
