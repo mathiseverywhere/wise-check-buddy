@@ -1,8 +1,10 @@
-import { useQC, type TestJob, type Product } from "@/lib/qcStore";
+import type { TestJob, Product } from "@/lib/qcData";
 
 export function AppShell({
   title,
   subtitle,
+  role,
+  onSwitchRole,
   tab,
   setTab,
   tabs,
@@ -10,36 +12,33 @@ export function AppShell({
 }: {
   title: string;
   subtitle?: string;
+  role: "office" | "worker";
+  onSwitchRole: () => void;
   tab: string;
   setTab: (t: string) => void;
   tabs: { id: string; label: string; badge?: number }[];
   children: React.ReactNode;
 }) {
-  const { state, dispatch } = useQC();
-  const session = state.session!;
-
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-ink/15 bg-card">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-3">
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-ink/50">
-                Prüfstrecke
-              </div>
-              <div className="font-display text-lg leading-none">{title}</div>
-              {subtitle && <div className="font-mono text-[10px] text-ink/50">{subtitle}</div>}
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-ink/50">
+              Prüfstrecke
             </div>
+            <div className="font-display text-lg leading-none">{title}</div>
+            {subtitle && <div className="font-mono text-[10px] text-ink/50">{subtitle}</div>}
           </div>
           <div className="flex items-center gap-3 font-mono text-[11px]">
             <span className="rounded-sm border border-ink/25 px-2 py-1 uppercase tracking-[0.18em]">
-              {session.role === "office" ? "Büro" : "Arbeiter"} · {session.name}
+              {role === "office" ? "Büro" : "Arbeiter"}
             </span>
             <button
-              onClick={() => dispatch({ type: "logout" })}
+              onClick={onSwitchRole}
               className="border border-ink/25 px-2 py-1 uppercase tracking-[0.18em] hover:border-ink"
             >
-              Abmelden
+              Rolle wechseln
             </button>
           </div>
         </div>
@@ -49,9 +48,7 @@ export function AppShell({
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 border-b-2 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] ${
-                tab === t.id
-                  ? "border-ink text-ink"
-                  : "border-transparent text-ink/50 hover:text-ink"
+                tab === t.id ? "border-ink text-ink" : "border-transparent text-ink/50 hover:text-ink"
               }`}
             >
               {t.label}
@@ -85,9 +82,7 @@ export function StatusPill({ status }: { status: TestJob["status"] }) {
   };
   const v = map[status];
   return (
-    <span
-      className={`inline-block rounded-sm px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] ${v.cls}`}
-    >
+    <span className={`inline-block rounded-sm px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] ${v.cls}`}>
       {v.l}
     </span>
   );

@@ -14,7 +14,305 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      job_checklist: {
+        Row: {
+          check_appearance: boolean
+          check_cage: boolean
+          check_chamfer: boolean
+          check_hardness: boolean
+          check_inner_dia: boolean
+          check_noise: boolean
+          check_oil_hole: boolean
+          check_outer_dia: boolean
+          check_radial_play: boolean
+          check_spin: boolean
+          check_vibration: boolean
+          check_width: boolean
+          extra_instructions: string | null
+          job_id: string
+        }
+        Insert: {
+          check_appearance?: boolean
+          check_cage?: boolean
+          check_chamfer?: boolean
+          check_hardness?: boolean
+          check_inner_dia?: boolean
+          check_noise?: boolean
+          check_oil_hole?: boolean
+          check_outer_dia?: boolean
+          check_radial_play?: boolean
+          check_spin?: boolean
+          check_vibration?: boolean
+          check_width?: boolean
+          extra_instructions?: string | null
+          job_id: string
+        }
+        Update: {
+          check_appearance?: boolean
+          check_cage?: boolean
+          check_chamfer?: boolean
+          check_hardness?: boolean
+          check_inner_dia?: boolean
+          check_noise?: boolean
+          check_oil_hole?: boolean
+          check_outer_dia?: boolean
+          check_radial_play?: boolean
+          check_spin?: boolean
+          check_vibration?: boolean
+          check_width?: boolean
+          extra_instructions?: string | null
+          job_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_checklist_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "test_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_stations: {
+        Row: {
+          checkpoint_key: string
+          claimed_by: string | null
+          claimed_date: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          job_id: string
+          measurements: Json | null
+          note: string | null
+          result: string | null
+          status: string
+        }
+        Insert: {
+          checkpoint_key: string
+          claimed_by?: string | null
+          claimed_date?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          measurements?: Json | null
+          note?: string | null
+          result?: string | null
+          status?: string
+        }
+        Update: {
+          checkpoint_key?: string
+          claimed_by?: string | null
+          claimed_date?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          measurements?: Json | null
+          note?: string | null
+          result?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_stations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "test_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_tolerances: {
+        Row: {
+          hardness_inner_max: number | null
+          hardness_inner_min: number | null
+          hardness_outer_max: number | null
+          hardness_outer_min: number | null
+          inner_dia_max: number | null
+          inner_dia_min: number | null
+          noise_max: number | null
+          outer_dia_max: number | null
+          outer_dia_min: number | null
+          product_id: string
+          radial_play_max: number | null
+          radial_play_min: number | null
+          unit_dim: string | null
+          updated_at: string
+          vibration_high_max: number | null
+          vibration_low_max: number | null
+          vibration_mid_max: number | null
+          width_max: number | null
+          width_min: number | null
+        }
+        Insert: {
+          hardness_inner_max?: number | null
+          hardness_inner_min?: number | null
+          hardness_outer_max?: number | null
+          hardness_outer_min?: number | null
+          inner_dia_max?: number | null
+          inner_dia_min?: number | null
+          noise_max?: number | null
+          outer_dia_max?: number | null
+          outer_dia_min?: number | null
+          product_id: string
+          radial_play_max?: number | null
+          radial_play_min?: number | null
+          unit_dim?: string | null
+          updated_at?: string
+          vibration_high_max?: number | null
+          vibration_low_max?: number | null
+          vibration_mid_max?: number | null
+          width_max?: number | null
+          width_min?: number | null
+        }
+        Update: {
+          hardness_inner_max?: number | null
+          hardness_inner_min?: number | null
+          hardness_outer_max?: number | null
+          hardness_outer_min?: number | null
+          inner_dia_max?: number | null
+          inner_dia_min?: number | null
+          noise_max?: number | null
+          outer_dia_max?: number | null
+          outer_dia_min?: number | null
+          product_id?: string
+          radial_play_max?: number | null
+          radial_play_min?: number | null
+          unit_dim?: string | null
+          updated_at?: string
+          vibration_high_max?: number | null
+          vibration_low_max?: number | null
+          vibration_mid_max?: number | null
+          width_max?: number | null
+          width_min?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_tolerances_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          bearing_type: string | null
+          created_at: string
+          has_laser_marking: boolean
+          id: string
+          laser_text: string | null
+          name: string | null
+          nominal_inner_dia: number | null
+          nominal_outer_dia: number | null
+          nominal_width: number | null
+          packing_type: string | null
+          reference: string
+          remark: string | null
+          updated_at: string
+        }
+        Insert: {
+          bearing_type?: string | null
+          created_at?: string
+          has_laser_marking?: boolean
+          id?: string
+          laser_text?: string | null
+          name?: string | null
+          nominal_inner_dia?: number | null
+          nominal_outer_dia?: number | null
+          nominal_width?: number | null
+          packing_type?: string | null
+          reference: string
+          remark?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bearing_type?: string | null
+          created_at?: string
+          has_laser_marking?: boolean
+          id?: string
+          laser_text?: string | null
+          name?: string | null
+          nominal_inner_dia?: number | null
+          nominal_outer_dia?: number | null
+          nominal_width?: number | null
+          packing_type?: string | null
+          reference?: string
+          remark?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      test_jobs: {
+        Row: {
+          created_at: string
+          decision: string | null
+          decision_note: string | null
+          id: string
+          instructions: string
+          marked_at: string | null
+          office_note: string | null
+          packed_at: string | null
+          product_id: string
+          quantity_total: number
+          sample_general: number
+          sample_inner: number
+          sample_outer: number
+          sample_width: number
+          scheduled_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision?: string | null
+          decision_note?: string | null
+          id?: string
+          instructions?: string
+          marked_at?: string | null
+          office_note?: string | null
+          packed_at?: string | null
+          product_id: string
+          quantity_total?: number
+          sample_general?: number
+          sample_inner?: number
+          sample_outer?: number
+          sample_width?: number
+          scheduled_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string | null
+          decision_note?: string | null
+          id?: string
+          instructions?: string
+          marked_at?: string | null
+          office_note?: string | null
+          packed_at?: string | null
+          product_id?: string
+          quantity_total?: number
+          sample_general?: number
+          sample_inner?: number
+          sample_outer?: number
+          sample_width?: number
+          scheduled_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
