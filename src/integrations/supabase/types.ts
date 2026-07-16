@@ -304,6 +304,7 @@ export type Database = {
           office_note: string | null
           order_number: string | null
           packed_at: string | null
+          packing_type: string | null
           product_id: string
           quantity_total: number
           received_at: string | null
@@ -340,6 +341,7 @@ export type Database = {
           office_note?: string | null
           order_number?: string | null
           packed_at?: string | null
+          packing_type?: string | null
           product_id: string
           quantity_total?: number
           received_at?: string | null
@@ -376,6 +378,7 @@ export type Database = {
           office_note?: string | null
           order_number?: string | null
           packed_at?: string | null
+          packing_type?: string | null
           product_id?: string
           quantity_total?: number
           received_at?: string | null
