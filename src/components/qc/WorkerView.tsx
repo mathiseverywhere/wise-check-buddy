@@ -4,19 +4,20 @@ import {
   activeCheckpoints, getCheckpoint, evaluateValue,
   ensureStation, claimStation, releaseStation, completeStation,
   markJobInTesting, advanceIfComplete, completeMarking, completePacking,
-  receiveOrder, completeReturn, confirmShipment,
+  receiveOrder, transportToInspection, completeReturn, confirmShipment,
   type Product, type TestJob, type Station, type Tolerances, type CheckpointDef, type Checklist, type JobReturn,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
 
 export function WorkerView({ workerName, onSwitchRole }: { workerName: string; onSwitchRole: () => void }) {
-  const [tab, setTab] = useState<"receipt" | "testing" | "returns" | "marking" | "packing" | "shipment">("testing");
+  const [tab, setTab] = useState<"receipt" | "transport" | "testing" | "returns" | "marking" | "packing" | "shipment">("testing");
   const products = useProducts();
   const tol = useTolerancesMap();
   const { data: jobs, checklists, refetch } = useJobs();
   const returns = useReturns();
 
   const receipt = jobs.filter((j) => j.status === "awaiting_receipt");
+  const transport = jobs.filter((j) => j.status === "in_transport");
   const testing = jobs.filter((j) => j.status === "in_testing" || j.status === "scheduled");
   const marking = jobs.filter((j) => j.status === "in_marking");
   const packing = jobs.filter((j) => j.status === "in_packing");
@@ -33,6 +34,7 @@ export function WorkerView({ workerName, onSwitchRole }: { workerName: string; o
       setTab={(t) => setTab(t as typeof tab)}
       tabs={[
         { id: "receipt", label: "Warenannahme", badge: receipt.length },
+        { id: "transport", label: "Transport → Prüfung", badge: transport.length },
         { id: "testing", label: "Prüfung", badge: testing.length },
         { id: "returns", label: "Rücksendungen", badge: openReturns.length },
         { id: "marking", label: "Lasermarkierung", badge: marking.length },
@@ -41,6 +43,7 @@ export function WorkerView({ workerName, onSwitchRole }: { workerName: string; o
       ]}
     >
       {tab === "receipt" && <ReceiptTab worker={workerName} jobs={receipt} products={products.data} onDone={refetch} />}
+      {tab === "transport" && <TransportTab worker={workerName} jobs={transport} products={products.data} onDone={refetch} />}
       {tab === "testing" && (
         <TestingTab worker={workerName} jobs={testing} products={products.data} tol={tol.data} checklists={checklists} onRefetch={refetch} />
       )}
@@ -49,6 +52,57 @@ export function WorkerView({ workerName, onSwitchRole }: { workerName: string; o
       {tab === "packing" && <PackingTab jobs={packing} products={products.data} onDone={refetch} />}
       {tab === "shipment" && <ShipmentTab worker={workerName} jobs={shipment} products={products.data} onDone={refetch} />}
     </AppShell>
+  );
+}
+
+// ---------- Transport (Lager → Prüfzentrum) ----------
+
+function TransportTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Nichts zu transportieren.</div>;
+  return (
+    <div className="space-y-3">
+      <div className="border border-ink/15 bg-muted px-4 py-2 font-mono text-[11px] text-ink/60">
+        Ware aus dem Lager holen, Prüf-Etikett (Inspection-Tag) vergeben und ins Prüfzentrum bringen. Das Etikett erscheint anschließend im Prüfungsfenster.
+      </div>
+      {jobs.map((j) => {
+        const p = products.find((x) => x.id === j.product_id);
+        return <TransportCard key={j.id} worker={worker} job={j} product={p} onDone={onDone} />;
+      })}
+    </div>
+  );
+}
+
+function TransportCard({ worker, job, product, onDone }: { worker: string; job: TestJob; product: Product | undefined; onDone: () => void }) {
+  const suggested = `T-${(job.order_number ?? job.id.slice(0, 4)).toString().slice(-6)}-${new Date().toISOString().slice(5,10).replace("-","")}`;
+  const [tag, setTag] = useState(suggested);
+  const [busy, setBusy] = useState(false);
+  async function submit() {
+    if (!tag.trim()) return;
+    setBusy(true);
+    try { await transportToInspection(job.id, tag.trim(), worker); onDone(); } finally { setBusy(false); }
+  }
+  return (
+    <div className="border border-ink/25 bg-card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          {product && <ProductChip product={product} orderNumber={job.order_number} />}
+          <div className="mt-1 font-mono text-[10px] text-ink/50">
+            Lagerort: <b>{job.storage_location ?? "—"}</b> · {job.incoming_qty ?? job.quantity_total} Stk · {job.customer} ← {job.supplier}
+          </div>
+          {job.instructions === "full_check" && (
+            <span className="mt-1 inline-block tape-stripes px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-paper">Full Check</span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Prüf-Etikett
+            <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="z.B. T-1234-1116" className="ml-2 border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs w-56 normal-case tracking-normal" />
+          </label>
+          <button onClick={submit} disabled={busy || !tag.trim()} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
+            {busy ? "…" : "Etikettiert → ins Prüfzentrum"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
