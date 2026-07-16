@@ -215,7 +215,7 @@ function Timeline({
       ts: job.packed_at,
       phase: "Produktion · Packing",
       title: "Verpackung abgeschlossen",
-      detail: product?.packing_type ?? undefined,
+      detail: job.packing_type ?? product?.packing_type ?? undefined,
     });
   }
 

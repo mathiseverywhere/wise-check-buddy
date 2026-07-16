@@ -566,7 +566,7 @@ function OrderTab({
             ))}
           </ul>
         ) : <div className="mt-2 text-ink/40">Keine Toleranzen in DB — Prüfer trägt Werte ein, ohne automatische Bewertung.</div>}
-        <div className="mt-4 text-ink/50">Ablauf: Bestellung → Warenannahme (Arbeiter bucht Lagerort) → QC-Planung → Prüfung → Freigabe → Marking → Packing → Versand.</div>
+        <div className="mt-4 text-ink/50">Ablauf: Bestellung → Warenannahme → Transport → Prüfung → <b>Freigabe (mit Verpackung + Versandart)</b> → Marking → Packing → Versand-Bestätigung.</div>
       </div>
     </div>
   );
