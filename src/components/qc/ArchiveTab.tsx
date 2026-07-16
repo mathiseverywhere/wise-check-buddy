@@ -49,7 +49,7 @@ export function ArchiveTab({ jobs, products }: { jobs: TestJob[]; products: Prod
 
       <div className="border border-ink/20 bg-card">
         <div className="border-b border-ink/15 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">
-          Completede Orderen · Document chain für SAP
+          Completed orders · Document chain for SAP
         </div>
         <div className="divide-y divide-ink/10">
           {filtered.length === 0 && (

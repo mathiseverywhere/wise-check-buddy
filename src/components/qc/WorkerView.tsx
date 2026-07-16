@@ -109,7 +109,7 @@ function TransportCard({ worker, job, product, onDone }: { worker: string; job: 
 // ---------- Goods receipt ----------
 
 function ReceiptTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Orderen zur Annahme.</div>;
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Orders zur Annahme.</div>;
   return (
     <div className="space-y-3">
       {jobs.map((j) => {
@@ -591,7 +591,7 @@ function PackingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
   );
 }
 
-// ---------- Shipment (Workers bestätigt) ----------
+// ---------- Shipment (Worker confirms) ----------
 
 function ShipmentTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
   void worker;
