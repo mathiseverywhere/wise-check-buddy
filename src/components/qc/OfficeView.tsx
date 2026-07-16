@@ -656,12 +656,28 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
   const [defectCount, setDefectCount] = useState(fails);
   const [defectNote, setDefectNote] = useState("");
   const [decisionNote, setDecisionNote] = useState("");
+  const [packingType, setPackingType] = useState<string>(job.packing_type ?? product?.packing_type ?? PACKING[0]);
+  const [mode, setMode] = useState<"air" | "sea">(job.shipment_mode ?? "sea");
+  const [country, setCountry] = useState(job.destination_country ?? "");
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function decide(kind: "pass" | "retest" | "reject") {
+    if (kind === "pass" && (!packingType.trim() || !country.trim())) {
+      setErr("Für die Freigabe sind Verpackungsart und Zielland Pflicht.");
+      return;
+    }
+    setErr(null);
     setBusy(true);
     try {
-      await decideJob(job.id, kind, decisionNote || undefined, !!product?.has_laser_marking || !!job.laser_text, defectCount, defectNote || undefined);
+      await decideJob(
+        job.id, kind, decisionNote || undefined,
+        !!product?.has_laser_marking || !!job.laser_text,
+        defectCount, defectNote || undefined,
+        kind === "pass"
+          ? { packing_type: packingType, shipment_mode: mode, destination_country: country.trim() }
+          : undefined,
+      );
       onDone();
     } finally { setBusy(false); }
   }
@@ -670,7 +686,7 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
     <div className="border border-ink/25 bg-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/15 px-5 py-3">
         <div className="flex items-center gap-3">
-          {product && <ProductChip product={product} orderNumber={job.order_number} />}
+          {product && <ProductChip product={product} orderNumber={job.order_number} inspectionTag={job.inspection_tag} />}
           <span className="font-mono text-[10px] text-ink/50">{job.customer} · {job.incoming_qty} Stk</span>
         </div>
         {fails > 0
@@ -696,6 +712,7 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
           );
         })}
       </ul>
+
       <div className="grid gap-3 border-t border-ink/10 p-4 md:grid-cols-2">
         <label className="block">
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Anzahl schlechte Lager</div>
@@ -710,8 +727,35 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
           <input value={decisionNote} onChange={(e) => setDecisionNote(e.target.value)} className={inputCls} />
         </label>
       </div>
+
+      <div className="border-t border-ink/10 bg-muted/40 p-4">
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/60">
+          Für Freigabe erforderlich · Verpackung &amp; Versand
+        </div>
+        <div className="mt-2 grid gap-3 md:grid-cols-3">
+          <label className="block">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Verpackungsart *</div>
+            <select value={packingType} onChange={(e) => setPackingType(e.target.value)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
+              {PACKING.map((p) => <option key={p}>{p}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Versandart *</div>
+            <select value={mode} onChange={(e) => setMode(e.target.value as any)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
+              <option value="sea">Seefracht</option>
+              <option value="air">Luftfracht</option>
+            </select>
+          </label>
+          <label className="block">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Zielland *</div>
+            <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="z.B. Deutschland" className={inputCls} />
+          </label>
+        </div>
+      </div>
+
+      {err && <div className="border-t border-destructive/40 bg-destructive/10 px-4 py-2 font-mono text-[11px] text-destructive">{err}</div>}
       <div className="flex flex-wrap gap-2 border-t border-ink/10 p-4">
-        <button disabled={busy} onClick={() => decide("pass")} className="bg-ok px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85 disabled:opacity-30">Freigeben (Rest weiter)</button>
+        <button disabled={busy} onClick={() => decide("pass")} className="bg-ok px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85 disabled:opacity-30">Freigeben → Marking/Packing</button>
         <button disabled={busy} onClick={() => decide("retest")} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85 disabled:opacity-30">Erneut prüfen</button>
         <button disabled={busy} onClick={() => decide("reject")} className="bg-destructive px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-destructive-foreground hover:opacity-85 disabled:opacity-30">Komplett sperren</button>
       </div>
