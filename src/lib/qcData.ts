@@ -67,6 +67,9 @@ export type TestJob = {
   storage_location: string | null;
   received_at: string | null;
   received_by: string | null;
+  inspection_tag: string | null;
+  transported_by: string | null;
+  transported_at: string | null;
   defect_count: number | null;
   defect_note: string | null;
   shipment_mode: "air" | "sea" | null;

@@ -74,6 +74,7 @@ export function StatusPill({ status }: { status: TestJob["status"] }) {
   const map: Record<TestJob["status"], { l: string; cls: string }> = {
     awaiting_receipt: { l: "Warenannahme", cls: "bg-accent/25 text-ink" },
     in_stock: { l: "Auf Lager", cls: "bg-ink/10 text-ink" },
+    in_transport: { l: "Transport", cls: "bg-accent/40 text-ink" },
     scheduled: { l: "Geplant", cls: "bg-muted text-ink/70" },
     in_testing: { l: "In Prüfung", cls: "bg-accent/25 text-ink" },
     awaiting_decision: { l: "Büro-Entscheid", cls: "bg-ink text-paper" },
