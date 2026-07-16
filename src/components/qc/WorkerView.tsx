@@ -1,22 +1,27 @@
 import { useMemo, useState, useEffect } from "react";
 import {
-  useProducts, useTolerancesMap, useJobs, useStations,
+  useProducts, useTolerancesMap, useJobs, useStations, useReturns,
   activeCheckpoints, getCheckpoint, evaluateValue,
   ensureStation, claimStation, releaseStation, completeStation,
   markJobInTesting, advanceIfComplete, completeMarking, completePacking,
-  type Product, type TestJob, type Station, type Tolerances, type CheckpointDef, type Checklist,
+  receiveOrder, completeReturn, confirmShipment,
+  type Product, type TestJob, type Station, type Tolerances, type CheckpointDef, type Checklist, type JobReturn,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
 
 export function WorkerView({ workerName, onSwitchRole }: { workerName: string; onSwitchRole: () => void }) {
-  const [tab, setTab] = useState<"testing" | "marking" | "packing">("testing");
+  const [tab, setTab] = useState<"receipt" | "testing" | "returns" | "marking" | "packing" | "shipment">("testing");
   const products = useProducts();
   const tol = useTolerancesMap();
   const { data: jobs, checklists, refetch } = useJobs();
+  const returns = useReturns();
 
+  const receipt = jobs.filter((j) => j.status === "awaiting_receipt");
   const testing = jobs.filter((j) => j.status === "in_testing" || j.status === "scheduled");
   const marking = jobs.filter((j) => j.status === "in_marking");
   const packing = jobs.filter((j) => j.status === "in_packing");
+  const shipment = jobs.filter((j) => j.status === "in_shipment" && j.shipment_status === "prepared");
+  const openReturns = returns.data.filter((r) => r.status === "open");
 
   return (
     <AppShell
@@ -27,17 +32,65 @@ export function WorkerView({ workerName, onSwitchRole }: { workerName: string; o
       tab={tab}
       setTab={(t) => setTab(t as typeof tab)}
       tabs={[
+        { id: "receipt", label: "Warenannahme", badge: receipt.length },
         { id: "testing", label: "Prüfung", badge: testing.length },
+        { id: "returns", label: "Rücksendungen", badge: openReturns.length },
         { id: "marking", label: "Lasermarkierung", badge: marking.length },
         { id: "packing", label: "Verpackung", badge: packing.length },
+        { id: "shipment", label: "Versand", badge: shipment.length },
       ]}
     >
+      {tab === "receipt" && <ReceiptTab worker={workerName} jobs={receipt} products={products.data} onDone={refetch} />}
       {tab === "testing" && (
         <TestingTab worker={workerName} jobs={testing} products={products.data} tol={tol.data} checklists={checklists} onRefetch={refetch} />
       )}
+      {tab === "returns" && <ReturnsTab worker={workerName} returns={openReturns} jobs={jobs} products={products.data} onDone={returns.refetch} />}
       {tab === "marking" && <MarkingTab jobs={marking} products={products.data} onDone={refetch} />}
       {tab === "packing" && <PackingTab jobs={packing} products={products.data} onDone={refetch} />}
+      {tab === "shipment" && <ShipmentTab worker={workerName} jobs={shipment} products={products.data} onDone={refetch} />}
     </AppShell>
+  );
+}
+
+// ---------- Warenannahme ----------
+
+function ReceiptTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Bestellungen zur Annahme.</div>;
+  return (
+    <div className="space-y-3">
+      {jobs.map((j) => {
+        const p = products.find((x) => x.id === j.product_id);
+        return <ReceiptCard key={j.id} worker={worker} job={j} product={p} onDone={onDone} />;
+      })}
+    </div>
+  );
+}
+
+function ReceiptCard({ worker, job, product, onDone }: { worker: string; job: TestJob; product: Product | undefined; onDone: () => void }) {
+  const [loc, setLoc] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit() {
+    if (!loc.trim()) return;
+    setBusy(true);
+    try { await receiveOrder(job.id, loc.trim(), worker); onDone(); } finally { setBusy(false); }
+  }
+  return (
+    <div className="border border-ink/25 bg-card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          {product && <ProductChip product={product} orderNumber={job.order_number} />}
+          <div className="mt-1 font-mono text-[10px] text-ink/50">
+            Kunde: <b>{job.customer}</b> · Lieferant: <b>{job.supplier}</b> · {job.incoming_qty} Stk
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <input value={loc} onChange={(e) => setLoc(e.target.value)} placeholder="Lagerort (z.B. Regal A-12)" className="border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs w-56" />
+          <button onClick={submit} disabled={busy || !loc.trim()} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
+            {busy ? "…" : "Angekommen → auf Lager"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -77,13 +130,13 @@ function TestingTab({
                   className={`block w-full px-4 py-3 text-left transition ${active ? "bg-ink text-paper" : "hover:bg-muted"}`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-sm">{p?.reference}</span>
+                    <span className="font-mono text-sm">{j.order_number ? `#${j.order_number}` : ""} {p?.reference}</span>
                     {j.instructions === "full_check" && (
                       <span className="tape-stripes px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-paper">Full</span>
                     )}
                   </div>
                   <div className={`mt-1 font-mono text-[10px] ${active ? "text-paper/60" : "text-ink/50"}`}>
-                    {j.scheduled_date} · {j.quantity_total} Stk
+                    {j.scheduled_date} · {j.incoming_qty ?? j.quantity_total} Stk
                   </div>
                 </button>
               </li>
@@ -130,7 +183,6 @@ function JobDetail({
   const stations = stationMap[job.id] ?? [];
   const [openKey, setOpenKey] = useState<string | null>(null);
 
-  // Ensure a station row exists for each active checkpoint
   useEffect(() => {
     (async () => {
       const existing = new Set(stations.map((s) => s.checkpoint_key));
@@ -168,9 +220,12 @@ function JobDetail({
     <div className="border border-ink/25 bg-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/15 px-6 py-4">
         <div>
-          {product && <ProductChip product={product} />}
+          {product && <ProductChip product={product} orderNumber={job.order_number} />}
           <div className="mt-1 font-mono text-[10px] text-ink/50">
-            {job.scheduled_date} · Menge {job.quantity_total} · Prüfmengen I{job.sample_inner}/A{job.sample_outer}/B{job.sample_width}, allg. {job.sample_general}
+            Kunde {job.customer ?? "—"} · Lieferant {job.supplier ?? "—"} · Ort {job.storage_location ?? "—"}
+          </div>
+          <div className="mt-0.5 font-mono text-[10px] text-ink/50">
+            {job.scheduled_date} · Menge {job.incoming_qty ?? job.quantity_total} · Prüfmengen I{job.sample_inner}/A{job.sample_outer}/B{job.sample_width}, allg. {job.sample_general}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -219,7 +274,6 @@ function JobDetail({
                   key={station.id + station.status}
                   station={station}
                   cp={cp}
-                  product={product}
                   tolerances={tolerances}
                   job={job}
                   canClaim={!blocked && station.status === "open" && !myClaimedToday}
@@ -244,9 +298,9 @@ function toleranceLabel(cp: CheckpointDef, tol: Tolerances | null, product: Prod
   const min = cp.tolMinKey ? tol?.[cp.tolMinKey] : null;
   const max = cp.tolMaxKey ? tol?.[cp.tolMaxKey] : null;
   if (min == null && max == null) return "keine Toleranz in DB — Freieingabe";
-  if (cp.toleranceMode === "deviation_um" && cp.nominalKey && product) {
+  if (cp.nominalKey && product) {
     const nom = product[cp.nominalKey];
-    return `Soll: ${nom ?? "?"} mm, Toleranz ${min ?? "—"}…${max ?? "—"} μm`;
+    return `Soll: ${nom ?? "?"} mm · Abweichung erlaubt ${min ?? "—"}…${max ?? "—"} μm`;
   }
   return `${min ?? "—"}…${max ?? "—"} ${cp.unit ?? ""}`;
 }
@@ -264,11 +318,10 @@ function StationBadge({ station, mine }: { station: Station | null; mine: boolea
 }
 
 function StationForm({
-  station, cp, product, tolerances, job, canClaim, claimHint, isMine, onClaim, onRelease, onSubmit,
+  station, cp, tolerances, job, canClaim, claimHint, isMine, onClaim, onRelease, onSubmit,
 }: {
   station: Station;
   cp: CheckpointDef;
-  product: Product | null;
   tolerances: Tolerances | null;
   job: TestJob;
   canClaim: boolean;
@@ -306,13 +359,11 @@ function StationForm({
     return <div className="mt-3 font-mono text-xs text-ink/60">Belegt durch {station.claimed_by}. Warteschlange — nächste Station wählen.</div>;
   }
 
-  // Claimed by me → input
-  const evaluations = values.map((v) => cp.visual ? null : evaluateValue(v, cp, tolerances, product));
+  const evaluations = values.map((v) => cp.visual ? null : evaluateValue(v, cp, tolerances));
   const overall: "ok" | "fail" | "unrated" | null =
     cp.visual ? (visual ?? null) :
     (() => {
       if (values.every((v) => v.trim() === "")) return null;
-      // if any tolerance defined → require rating
       const anyFail = evaluations.some((r) => r === "fail");
       const anyEvaluated = evaluations.some((r) => r != null);
       if (!anyEvaluated) return "unrated";
@@ -349,7 +400,7 @@ function StationForm({
                       inputMode="decimal"
                       value={v}
                       onChange={(e) => { const n = [...values]; n[i] = e.target.value; setValues(n); }}
-                      placeholder={cp.unit === "mm" ? "0.000" : "0"}
+                      placeholder="Abweichung"
                       className="w-full border-b border-ink/30 bg-transparent py-1 font-mono outline-none focus:border-ink"
                     />
                     <span className="font-mono text-[10px] text-ink/40">{cp.unit}</span>
@@ -397,6 +448,37 @@ function formatVals(m: any): string {
   return "—";
 }
 
+// ---------- Rücksendungen ----------
+
+function ReturnsTab({ worker, returns, jobs, products, onDone }: { worker: string; returns: JobReturn[]; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
+  if (returns.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine offenen Rücksendungen.</div>;
+  return (
+    <div className="space-y-3">
+      {returns.map((r) => {
+        const j = jobs.find((x) => x.id === r.job_id);
+        const p = j ? products.find((x) => x.id === j.product_id) : undefined;
+        return (
+          <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/25 bg-card p-4">
+            <div>
+              {p && j && <ProductChip product={p} orderNumber={j.order_number} />}
+              <div className="mt-1 font-mono text-[10px] text-ink/50">
+                <b>{r.quantity}</b> fehlerhafte Stk · Kunde {j?.customer ?? "—"} · Lieferant {j?.supplier ?? "—"}
+              </div>
+              {r.note && <div className="mt-1 font-mono text-xs">{r.note}</div>}
+            </div>
+            <button
+              onClick={async () => { await completeReturn(r.id, worker); onDone(); }}
+              className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85"
+            >
+              Rücksendung erledigt
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ---------- Marking ----------
 
 function MarkingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
@@ -405,11 +487,12 @@ function MarkingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
     <div className="space-y-3">
       {jobs.map((j) => {
         const p = products.find((x) => x.id === j.product_id);
+        const text = j.laser_text ?? p?.laser_text ?? p?.reference;
         return (
           <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/20 bg-card p-4">
             <div>
-              {p && <ProductChip product={p} />}
-              <div className="mt-1 font-mono text-[10px] text-ink/50">Menge {j.quantity_total} · Gravur: <b>{p?.laser_text ?? p?.reference}</b></div>
+              {p && <ProductChip product={p} orderNumber={j.order_number} />}
+              <div className="mt-1 font-mono text-[10px] text-ink/50">Menge {j.incoming_qty ?? j.quantity_total} · Gravur: <b>{text}</b></div>
             </div>
             <button onClick={async () => { await completeMarking(j.id); onDone(); }} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
               Markierung abgeschlossen
@@ -432,11 +515,39 @@ function PackingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
         return (
           <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/20 bg-card p-4">
             <div>
-              {p && <ProductChip product={p} />}
-              <div className="mt-1 font-mono text-[10px] text-ink/50">Menge {j.quantity_total} · Verpackung: <b>{p?.packing_type ?? "—"}</b></div>
+              {p && <ProductChip product={p} orderNumber={j.order_number} />}
+              <div className="mt-1 font-mono text-[10px] text-ink/50">Menge {j.incoming_qty ?? j.quantity_total} · Verpackung: <b>{p?.packing_type ?? "—"}</b></div>
             </div>
             <button onClick={async () => { await completePacking(j.id); onDone(); }} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
-              Verpackt
+              Verpackt → Versand
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------- Versand (Arbeiter bestätigt) ----------
+
+function ShipmentTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
+  void worker;
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Aufträge im Versand vorbereitet.</div>;
+  return (
+    <div className="space-y-3">
+      {jobs.map((j) => {
+        const p = products.find((x) => x.id === j.product_id);
+        return (
+          <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/25 bg-card p-4">
+            <div>
+              {p && <ProductChip product={p} orderNumber={j.order_number} />}
+              <div className="mt-1 font-mono text-[10px] text-ink/50">
+                Menge {j.incoming_qty ?? j.quantity_total} · {j.shipment_mode === "air" ? "Luftfracht" : "Seefracht"} → <b>{j.destination_country}</b>
+              </div>
+              <div className="mt-1 font-mono text-[10px] text-ink/50">Kunde: {j.customer}</div>
+            </div>
+            <button onClick={async () => { await confirmShipment(j.id); onDone(); }} className="bg-ok px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85">
+              Versendet — fertig
             </button>
           </div>
         );
