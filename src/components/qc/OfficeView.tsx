@@ -17,10 +17,11 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
   const returns = useReturns();
 
   const counts = useMemo(() => {
-    const c = { receipt: 0, stock: 0, testing: 0, decision: 0, marking: 0, packing: 0, shipment: 0, done: 0, rejected: 0, returns: 0 };
+    const c = { receipt: 0, stock: 0, transport: 0, testing: 0, decision: 0, marking: 0, packing: 0, shipment: 0, done: 0, rejected: 0, returns: 0 };
     for (const j of jobs.data) {
       if (j.status === "awaiting_receipt") c.receipt++;
       else if (j.status === "in_stock") c.stock++;
+      else if (j.status === "in_transport") c.transport++;
       else if (j.status === "in_testing" || j.status === "scheduled") c.testing++;
       else if (j.status === "awaiting_decision") c.decision++;
       else if (j.status === "in_marking") c.marking++;
@@ -66,6 +67,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
 const STATUS_LABEL: Record<string, string> = {
   awaiting_receipt: "Warenannahme",
   in_stock: "Auf Lager",
+  in_transport: "Transport zur Prüfung",
   scheduled: "QC geplant",
   in_testing: "In Prüfung",
   awaiting_decision: "Wartet auf Freigabe",
@@ -138,7 +140,7 @@ function JobLocator({ jobs, products }: { jobs: TestJob[]; products: Product[] }
 function Overview({
   counts, jobs, products,
 }: {
-  counts: { receipt: number; stock: number; testing: number; decision: number; marking: number; packing: number; shipment: number; done: number; rejected: number; returns: number };
+  counts: { receipt: number; stock: number; transport: number; testing: number; decision: number; marking: number; packing: number; shipment: number; done: number; rejected: number; returns: number };
   jobs: TestJob[];
   products: Product[];
 }) {
@@ -148,6 +150,7 @@ function Overview({
   const groups = [
     { key: "receipt", label: "Warenannahme", jobs: jobs.filter((j) => j.status === "awaiting_receipt") },
     { key: "stock", label: "Auf Lager", jobs: jobs.filter((j) => j.status === "in_stock") },
+    { key: "transport", label: "Transport → Prüfung", jobs: jobs.filter((j) => j.status === "in_transport") },
     { key: "testing", label: "In Prüfung / Geplant", jobs: jobs.filter((j) => j.status === "in_testing" || j.status === "scheduled") },
     { key: "decision", label: "Wartet auf Freigabe", jobs: jobs.filter((j) => j.status === "awaiting_decision") },
     { key: "marking", label: "Lasermarkierung", jobs: jobs.filter((j) => j.status === "in_marking") },
@@ -162,6 +165,7 @@ function Overview({
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
         <StatCard label="Warenannahme" value={counts.receipt} />
         <StatCard label="Auf Lager" value={counts.stock} />
+        <StatCard label="Transport" value={counts.transport} tone="accent" />
         <StatCard label="In Testing" value={counts.testing} tone="accent" />
         <StatCard label="Wartet Entscheid" value={counts.decision} tone="accent" />
         <StatCard label="Rücksendungen offen" value={counts.returns} tone="destructive" />

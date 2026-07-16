@@ -297,6 +297,7 @@ export type Database = {
           destination_country: string | null
           id: string
           incoming_qty: number | null
+          inspection_tag: string | null
           instructions: string
           laser_text: string | null
           marked_at: string | null
@@ -318,6 +319,8 @@ export type Database = {
           status: string
           storage_location: string | null
           supplier: string | null
+          transported_at: string | null
+          transported_by: string | null
           updated_at: string
         }
         Insert: {
@@ -330,6 +333,7 @@ export type Database = {
           destination_country?: string | null
           id?: string
           incoming_qty?: number | null
+          inspection_tag?: string | null
           instructions?: string
           laser_text?: string | null
           marked_at?: string | null
@@ -351,6 +355,8 @@ export type Database = {
           status?: string
           storage_location?: string | null
           supplier?: string | null
+          transported_at?: string | null
+          transported_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -363,6 +369,7 @@ export type Database = {
           destination_country?: string | null
           id?: string
           incoming_qty?: number | null
+          inspection_tag?: string | null
           instructions?: string
           laser_text?: string | null
           marked_at?: string | null
@@ -384,6 +391,8 @@ export type Database = {
           status?: string
           storage_location?: string | null
           supplier?: string | null
+          transported_at?: string | null
+          transported_by?: string | null
           updated_at?: string
         }
         Relationships: [
