@@ -279,7 +279,7 @@ function JobDetail({
     <div className="border border-ink/25 bg-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/15 px-6 py-4">
         <div>
-          {product && <ProductChip product={product} orderNumber={job.order_number} />}
+          {product && <ProductChip product={product} orderNumber={job.order_number} inspectionTag={job.inspection_tag} />}
           <div className="mt-1 font-mono text-[10px] text-ink/50">
             Kunde {job.customer ?? "—"} · Lieferant {job.supplier ?? "—"} · Ort {job.storage_location ?? "—"}
           </div>
