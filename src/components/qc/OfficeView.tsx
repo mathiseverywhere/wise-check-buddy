@@ -7,6 +7,7 @@ import {
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
 import { ArchiveTab } from "./ArchiveTab";
+import { useBi } from "@/lib/i18n";
 
 const PACKING = ["Single carton", "Blister", "Bulk crate", "Plastic bag"];
 
