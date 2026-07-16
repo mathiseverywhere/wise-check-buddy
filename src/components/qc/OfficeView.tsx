@@ -6,6 +6,7 @@ import {
   type Product, type Tolerances, type TestJob, type Checklist,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
+import { ArchiveTab } from "./ArchiveTab";
 
 const PACKING = ["Karton einzeln", "Blister", "Sammelkiste", "Kunststoffbeutel"];
 
