@@ -6,11 +6,12 @@ import {
   type Product, type Tolerances, type TestJob, type Checklist,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
+import { ArchiveTab } from "./ArchiveTab";
 
 const PACKING = ["Karton einzeln", "Blister", "Sammelkiste", "Kunststoffbeutel"];
 
 export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
-  const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "shipment">("overview");
+  const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "shipment" | "archive">("overview");
   const products = useProducts();
   const tol = useTolerancesMap();
   const jobs = useJobs();
@@ -49,6 +50,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
         { id: "book", label: "QC-Planung", badge: counts.stock },
         { id: "decisions", label: "Freigaben", badge: counts.decision },
         { id: "shipment", label: "Versand", badge: counts.shipment },
+        { id: "archive", label: "Archiv", badge: counts.done },
       ]}
     >
       <JobLocator jobs={jobs.data} products={products.data} />
@@ -58,6 +60,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
       {tab === "book" && <BookingTab jobs={jobs.data.filter((j) => j.status === "in_stock")} products={products.data} onDone={jobs.refetch} />}
       {tab === "decisions" && <DecisionsTab jobs={jobs.data} products={products.data} onDone={jobs.refetch} />}
       {tab === "shipment" && <ShipmentTab jobs={jobs.data.filter((j) => j.status === "in_shipment")} products={products.data} onDone={jobs.refetch} />}
+      {tab === "archive" && <ArchiveTab jobs={jobs.data} products={products.data} />}
     </AppShell>
   );
 }
