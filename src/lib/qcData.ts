@@ -39,7 +39,7 @@ export type Checklist = {
 };
 
 export type JobStatus =
-  | "awaiting_receipt" | "in_stock"
+  | "awaiting_receipt" | "in_stock" | "in_transport"
   | "scheduled" | "in_testing" | "awaiting_decision"
   | "in_marking" | "in_packing"
   | "in_shipment" | "done" | "rejected";
