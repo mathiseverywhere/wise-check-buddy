@@ -189,6 +189,11 @@ function TestingTab({
                       <span className="tape-stripes px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-paper">Full</span>
                     )}
                   </div>
+                  {j.inspection_tag && (
+                    <div className={`mt-1 inline-block rounded-sm px-1.5 py-0.5 font-mono text-[10px] ${active ? "bg-paper text-ink" : "bg-accent text-ink"}`}>
+                      🏷 {j.inspection_tag}
+                    </div>
+                  )}
                   <div className={`mt-1 font-mono text-[10px] ${active ? "text-paper/60" : "text-ink/50"}`}>
                     {j.scheduled_date} · {j.incoming_qty ?? j.quantity_total} Stk
                   </div>
