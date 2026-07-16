@@ -25,20 +25,20 @@ export function AppShell({
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-3">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-ink/50">
-              Warenprozess
+              Warehouse process
             </div>
             <div className="font-display text-lg leading-none">{title}</div>
             {subtitle && <div className="font-mono text-[10px] text-ink/50">{subtitle}</div>}
           </div>
           <div className="flex items-center gap-3 font-mono text-[11px]">
             <span className="rounded-sm border border-ink/25 px-2 py-1 uppercase tracking-[0.18em]">
-              {role === "office" ? "Büro" : "Arbeiter"}
+              {role === "office" ? "Office" : "Workers"}
             </span>
             <button
               onClick={onSwitchRole}
               className="border border-ink/25 px-2 py-1 uppercase tracking-[0.18em] hover:border-ink"
             >
-              Rolle wechseln
+              Switch role
             </button>
           </div>
         </div>
@@ -72,17 +72,17 @@ export function AppShell({
 
 export function StatusPill({ status }: { status: TestJob["status"] }) {
   const map: Record<TestJob["status"], { l: string; cls: string }> = {
-    awaiting_receipt: { l: "Warenannahme", cls: "bg-accent/25 text-ink" },
-    in_stock: { l: "Auf Lager", cls: "bg-ink/10 text-ink" },
+    awaiting_receipt: { l: "Goods receipt", cls: "bg-accent/25 text-ink" },
+    in_stock: { l: "In stock", cls: "bg-ink/10 text-ink" },
     in_transport: { l: "Transport", cls: "bg-accent/40 text-ink" },
-    scheduled: { l: "Geplant", cls: "bg-muted text-ink/70" },
-    in_testing: { l: "In Prüfung", cls: "bg-accent/25 text-ink" },
-    awaiting_decision: { l: "Büro-Entscheid", cls: "bg-ink text-paper" },
-    in_marking: { l: "Lasermarkierung", cls: "bg-ink/80 text-paper" },
-    in_packing: { l: "Verpackung", cls: "bg-ok/20 text-ok" },
-    in_shipment: { l: "Versand", cls: "bg-accent/40 text-ink" },
-    done: { l: "Fertig", cls: "bg-ok text-paper" },
-    rejected: { l: "Gesperrt", cls: "bg-destructive text-destructive-foreground" },
+    scheduled: { l: "Scheduled", cls: "bg-muted text-ink/70" },
+    in_testing: { l: "In inspection", cls: "bg-accent/25 text-ink" },
+    awaiting_decision: { l: "Office-Entscheid", cls: "bg-ink text-paper" },
+    in_marking: { l: "Laser marking", cls: "bg-ink/80 text-paper" },
+    in_packing: { l: "Packing", cls: "bg-ok/20 text-ok" },
+    in_shipment: { l: "Shipment", cls: "bg-accent/40 text-ink" },
+    done: { l: "Done", cls: "bg-ok text-paper" },
+    rejected: { l: "Blocked", cls: "bg-destructive text-destructive-foreground" },
   };
   const v = map[status];
   return (
