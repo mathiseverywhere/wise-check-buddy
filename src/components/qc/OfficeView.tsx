@@ -50,6 +50,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
         { id: "book", label: "QC-Planung", badge: counts.stock },
         { id: "decisions", label: "Freigaben", badge: counts.decision },
         { id: "shipment", label: "Versand", badge: counts.shipment },
+        { id: "archive", label: "Archiv", badge: counts.done },
       ]}
     >
       <JobLocator jobs={jobs.data} products={products.data} />
