@@ -26,20 +26,20 @@ export function WorkerView({ workerName, onSwitchRole }: { workerName: string; o
 
   return (
     <AppShell
-      title="Arbeitsplatz"
-      subtitle={`Prüfer: ${workerName}`}
+      title="Workstation"
+      subtitle={`Inspector: ${workerName}`}
       role="worker"
       onSwitchRole={onSwitchRole}
       tab={tab}
       setTab={(t) => setTab(t as typeof tab)}
       tabs={[
-        { id: "receipt", label: "Warenannahme", badge: receipt.length },
-        { id: "transport", label: "Transport → Prüfung", badge: transport.length },
-        { id: "testing", label: "Prüfung", badge: testing.length },
-        { id: "returns", label: "Rücksendungen", badge: openReturns.length },
-        { id: "marking", label: "Lasermarkierung", badge: marking.length },
-        { id: "packing", label: "Verpackung", badge: packing.length },
-        { id: "shipment", label: "Versand", badge: shipment.length },
+        { id: "receipt", label: "Goods receipt", badge: receipt.length },
+        { id: "transport", label: "Transport → Inspection", badge: transport.length },
+        { id: "testing", label: "Inspection", badge: testing.length },
+        { id: "returns", label: "Returns", badge: openReturns.length },
+        { id: "marking", label: "Laser marking", badge: marking.length },
+        { id: "packing", label: "Packing", badge: packing.length },
+        { id: "shipment", label: "Shipment", badge: shipment.length },
       ]}
     >
       {tab === "receipt" && <ReceiptTab worker={workerName} jobs={receipt} products={products.data} onDone={refetch} />}
@@ -58,11 +58,11 @@ export function WorkerView({ workerName, onSwitchRole }: { workerName: string; o
 // ---------- Transport (Lager → Prüfzentrum) ----------
 
 function TransportTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Nichts zu transportieren.</div>;
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Nothing to transport.</div>;
   return (
     <div className="space-y-3">
       <div className="border border-ink/15 bg-muted px-4 py-2 font-mono text-[11px] text-ink/60">
-        Ware aus dem Lager holen, Prüf-Etikett (Inspection-Tag) vergeben und ins Prüfzentrum bringen. Das Etikett erscheint anschließend im Prüfungsfenster.
+        Ware aus dem Lager holen, Inspection tag (Inspection-Tag) vergeben und ins Prüfzentrum bringen. Das Etikett erscheint anschließend im Inspectionsfenster.
       </div>
       {jobs.map((j) => {
         const p = products.find((x) => x.id === j.product_id);
@@ -87,18 +87,18 @@ function TransportCard({ worker, job, product, onDone }: { worker: string; job: 
         <div>
           {product && <ProductChip product={product} orderNumber={job.order_number} />}
           <div className="mt-1 font-mono text-[10px] text-ink/50">
-            Lagerort: <b>{job.storage_location ?? "—"}</b> · {job.incoming_qty ?? job.quantity_total} Stk · {job.customer} ← {job.supplier}
+            Storage location: <b>{job.storage_location ?? "—"}</b> · {job.incoming_qty ?? job.quantity_total} pcs · {job.customer} ← {job.supplier}
           </div>
           {job.instructions === "full_check" && (
-            <span className="mt-1 inline-block tape-stripes px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-paper">Full Check</span>
+            <span className="mt-1 inline-block tape-stripes px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-paper">Full check</span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Prüf-Etikett
-            <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="z.B. T-1234-1116" className="ml-2 border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs w-56 normal-case tracking-normal" />
+          <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Inspection tag
+            <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g. T-1234-1116" className="ml-2 border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs w-56 normal-case tracking-normal" />
           </label>
           <button onClick={submit} disabled={busy || !tag.trim()} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-            {busy ? "…" : "Etikettiert → ins Prüfzentrum"}
+            {busy ? "…" : "Tagged → to inspection"}
           </button>
         </div>
       </div>
@@ -106,10 +106,10 @@ function TransportCard({ worker, job, product, onDone }: { worker: string; job: 
   );
 }
 
-// ---------- Warenannahme ----------
+// ---------- Goods receipt ----------
 
 function ReceiptTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Bestellungen zur Annahme.</div>;
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Orderen zur Annahme.</div>;
   return (
     <div className="space-y-3">
       {jobs.map((j) => {
@@ -134,13 +134,13 @@ function ReceiptCard({ worker, job, product, onDone }: { worker: string; job: Te
         <div>
           {product && <ProductChip product={product} orderNumber={job.order_number} />}
           <div className="mt-1 font-mono text-[10px] text-ink/50">
-            Kunde: <b>{job.customer}</b> · Lieferant: <b>{job.supplier}</b> · {job.incoming_qty} Stk
+            Customer: <b>{job.customer}</b> · Supplier: <b>{job.supplier}</b> · {job.incoming_qty} pcs
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <input value={loc} onChange={(e) => setLoc(e.target.value)} placeholder="Lagerort (z.B. Regal A-12)" className="border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs w-56" />
+          <input value={loc} onChange={(e) => setLoc(e.target.value)} placeholder="Storage location (z.B. Regal A-12)" className="border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs w-56" />
           <button onClick={submit} disabled={busy || !loc.trim()} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-            {busy ? "…" : "Angekommen → auf Lager"}
+            {busy ? "…" : "Received → to stock"}
           </button>
         </div>
       </div>
@@ -170,10 +170,10 @@ function TestingTab({
     <div className="grid gap-4 md:grid-cols-[320px,1fr]">
       <aside className="border border-ink/20 bg-card">
         <div className="border-b border-ink/15 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">
-          Aufträge · {jobs.length}
+          Jobs · {jobs.length}
         </div>
         <ul className="divide-y divide-ink/10">
-          {jobs.length === 0 && <li className="p-4 font-mono text-xs text-ink/40">— keine offenen —</li>}
+          {jobs.length === 0 && <li className="p-4 font-mono text-xs text-ink/40">— none open —</li>}
           {jobs.map((j) => {
             const p = productOf(j.product_id);
             const active = job?.id === j.id;
@@ -195,7 +195,7 @@ function TestingTab({
                     </div>
                   )}
                   <div className={`mt-1 font-mono text-[10px] ${active ? "text-paper/60" : "text-ink/50"}`}>
-                    {j.scheduled_date} · {j.incoming_qty ?? j.quantity_total} Stk
+                    {j.scheduled_date} · {j.incoming_qty ?? j.quantity_total} pcs
                   </div>
                 </button>
               </li>
@@ -205,7 +205,7 @@ function TestingTab({
       </aside>
 
       <section>
-        {!job && <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Kein Auftrag ausgewählt.</div>}
+        {!job && <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">No job selected.</div>}
         {job && (
           <JobDetail
             key={job.id}
@@ -281,15 +281,15 @@ function JobDetail({
         <div>
           {product && <ProductChip product={product} orderNumber={job.order_number} inspectionTag={job.inspection_tag} />}
           <div className="mt-1 font-mono text-[10px] text-ink/50">
-            Kunde {job.customer ?? "—"} · Lieferant {job.supplier ?? "—"} · Ort {job.storage_location ?? "—"}
+            Customer {job.customer ?? "—"} · Supplier {job.supplier ?? "—"} · Location {job.storage_location ?? "—"}
           </div>
           <div className="mt-0.5 font-mono text-[10px] text-ink/50">
-            {job.scheduled_date} · Menge {job.incoming_qty ?? job.quantity_total} · Prüfmengen I{job.sample_inner}/A{job.sample_outer}/B{job.sample_width}, allg. {job.sample_general}
+            {job.scheduled_date} · Qty {job.incoming_qty ?? job.quantity_total} · Samples I{job.sample_inner}/A{job.sample_outer}/B{job.sample_width}, gen. {job.sample_general}
           </div>
         </div>
         <div className="flex items-center gap-2">
           {job.instructions === "full_check" && (
-            <span className="tape-stripes px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-paper">Full Check</span>
+            <span className="tape-stripes px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-paper">Full check</span>
           )}
           <StatusPill status={job.status} />
         </div>
@@ -297,14 +297,14 @@ function JobDetail({
 
       {blocked && (
         <div className="border-b border-accent/40 bg-accent/10 px-6 py-3 font-mono text-xs">
-          Full Check auf {fullCheckRef ?? "einem anderen Auftrag"} aktiv — dieser Auftrag darf nicht angefangen werden.
+          Full check auf {fullCheckRef ?? "another job"} active — this job must not be started.
         </div>
       )}
-      {job.office_note && <div className="border-b border-ink/10 bg-muted px-6 py-2 font-mono text-xs">Büro: {job.office_note}</div>}
-      {checklist?.extra_instructions && <div className="border-b border-ink/10 bg-muted px-6 py-2 font-mono text-xs">Anweisung: {checklist.extra_instructions}</div>}
+      {job.office_note && <div className="border-b border-ink/10 bg-muted px-6 py-2 font-mono text-xs">Office: {job.office_note}</div>}
+      {checklist?.extra_instructions && <div className="border-b border-ink/10 bg-muted px-6 py-2 font-mono text-xs">Instruction: {checklist.extra_instructions}</div>}
 
       <div className="border-b border-ink/10 px-6 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">
-        Stationen · {doneCount}/{active.length} · Abweichungen: {failCount}
+        Stations · {doneCount}/{active.length} · Deviations: {failCount}
       </div>
 
       <ul className="divide-y divide-ink/10">
@@ -319,10 +319,10 @@ function JobDetail({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className={highlight ? "font-semibold text-destructive" : ""}>{cp.labelCn} · {cp.label}</span>
-                    {highlight && <span className="rounded-sm bg-destructive/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-destructive">außer Toleranz</span>}
+                    {highlight && <span className="rounded-sm bg-destructive/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-destructive">out of tolerance</span>}
                   </div>
                   <div className="font-mono text-[10px] text-ink/50">
-                    {toleranceLabel(cp, tolerances, product)} · {station?.claimed_by ? `${station.claimed_by} (${station.claimed_date})` : "offen"}
+                    {toleranceLabel(cp, tolerances, product)} · {station?.claimed_by ? `${station.claimed_by} (${station.claimed_date})` : "open"}
                   </div>
                 </div>
                 <StationBadge station={station ?? null} mine={mine} />
@@ -336,7 +336,7 @@ function JobDetail({
                   tolerances={tolerances}
                   job={job}
                   canClaim={!blocked && station.status === "open" && !myClaimedToday}
-                  claimHint={station.status === "open" ? (myClaimedToday ? "Heute schon eine Station in Bearbeitung." : blocked ? "Blockiert durch Full Check." : undefined) : undefined}
+                  claimHint={station.status === "open" ? (myClaimedToday ? "Already working on a station today." : blocked ? "Blockiert durch Full check." : undefined) : undefined}
                   isMine={mine}
                   onClaim={() => onClaim(station)}
                   onRelease={() => onRelease(station)}
@@ -353,27 +353,27 @@ function JobDetail({
 }
 
 function toleranceLabel(cp: CheckpointDef, tol: Tolerances | null, product: Product | null): string {
-  if (cp.visual) return "visuelle Prüfung";
+  if (cp.visual) return "visuelle Inspection";
   const min = cp.tolMinKey ? tol?.[cp.tolMinKey] : null;
   const max = cp.tolMaxKey ? tol?.[cp.tolMaxKey] : null;
-  if (min == null && max == null) return "keine Toleranz in DB — Freieingabe";
+  if (min == null && max == null) return "no tolerance in DB — free entry";
   if (cp.nominalKey && product) {
     const nom = product[cp.nominalKey];
-    return `Soll: ${nom ?? "?"} mm · Abweichung erlaubt ${min ?? "—"}…${max ?? "—"} μm`;
+    return `Target: ${nom ?? "?"} mm · Deviation erlaubt ${min ?? "—"}…${max ?? "—"} μm`;
   }
   return `${min ?? "—"}…${max ?? "—"} ${cp.unit ?? ""}`;
 }
 
 function StationBadge({ station, mine }: { station: Station | null; mine: boolean }) {
-  if (!station) return <span className="rounded-sm border border-ink/30 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em]">wird angelegt…</span>;
+  if (!station) return <span className="rounded-sm border border-ink/30 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em]">wird created…</span>;
   if (station.status === "done") {
     const cls = station.result === "ok" ? "bg-ok/15 text-ok" : station.result === "fail" ? "bg-destructive/15 text-destructive" : "bg-ink/10 text-ink/60";
     return <span className={`rounded-sm px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] ${cls}`}>{station.result?.toUpperCase() ?? "—"}</span>;
   }
   if (station.status === "claimed") {
-    return <span className={`rounded-sm px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] ${mine ? "bg-ink text-paper" : "bg-accent/25"}`}>{mine ? "Meine" : "belegt"}</span>;
+    return <span className={`rounded-sm px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] ${mine ? "bg-ink text-paper" : "bg-accent/25"}`}>{mine ? "Mine" : "claimed"}</span>;
   }
-  return <span className="rounded-sm border border-ink/30 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em]">offen</span>;
+  return <span className="rounded-sm border border-ink/30 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em]">open</span>;
 }
 
 function StationForm({
@@ -399,8 +399,8 @@ function StationForm({
   if (station.status === "done") {
     return (
       <div className="mt-3 rounded-sm bg-muted p-3 font-mono text-xs">
-        Ergebnis: <b>{formatVals(station.measurements)}</b> · {station.result === "ok" ? "in Toleranz" : station.result === "fail" ? "außer Toleranz" : "unbewertet"} · {station.claimed_by} ({station.claimed_date})
-        {station.note && <div className="mt-1 text-ink/60">Notiz: {station.note}</div>}
+        Result: <b>{formatVals(station.measurements)}</b> · {station.result === "ok" ? "in tolerance" : station.result === "fail" ? "out of tolerance" : "unrated"} · {station.claimed_by} ({station.claimed_date})
+        {station.note && <div className="mt-1 text-ink/60">Note: {station.note}</div>}
       </div>
     );
   }
@@ -408,14 +408,14 @@ function StationForm({
     return (
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button onClick={onClaim} disabled={!canClaim} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-          Station übernehmen
+          Claim station
         </button>
         {claimHint && <span className="font-mono text-xs text-ink/50">{claimHint}</span>}
       </div>
     );
   }
   if (!isMine) {
-    return <div className="mt-3 font-mono text-xs text-ink/60">Belegt durch {station.claimed_by}. Warteschlange — nächste Station wählen.</div>;
+    return <div className="mt-3 font-mono text-xs text-ink/60">Claimed by {station.claimed_by}. Queue — choose next station.</div>;
   }
 
   const evaluations = values.map((v) => cp.visual ? null : evaluateValue(v, cp, tolerances));
@@ -443,8 +443,8 @@ function StationForm({
     <div className="mt-3 space-y-3">
       {cp.visual ? (
         <div className="flex gap-2">
-          <button onClick={() => setVisual("ok")} className={`border px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] ${visual === "ok" ? "border-ok bg-ok/15 text-ok" : "border-ink/25"}`}>✓ i.O.</button>
-          <button onClick={() => setVisual("fail")} className={`border px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] ${visual === "fail" ? "border-destructive bg-destructive/15 text-destructive" : "border-ink/25"}`}>✕ n.i.O.</button>
+          <button onClick={() => setVisual("ok")} className={`border px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] ${visual === "ok" ? "border-ok bg-ok/15 text-ok" : "border-ink/25"}`}>✓ OK</button>
+          <button onClick={() => setVisual("fail")} className={`border px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] ${visual === "fail" ? "border-destructive bg-destructive/15 text-destructive" : "border-ink/25"}`}>✕ n.OK</button>
         </div>
       ) : (
         <div>
@@ -459,7 +459,7 @@ function StationForm({
                       inputMode="decimal"
                       value={v}
                       onChange={(e) => { const n = [...values]; n[i] = e.target.value; setValues(n); }}
-                      placeholder="Abweichung"
+                      placeholder="Deviation"
                       className="w-full border-b border-ink/30 bg-transparent py-1 font-mono outline-none focus:border-ink"
                     />
                     <span className="font-mono text-[10px] text-ink/40">{cp.unit}</span>
@@ -483,17 +483,17 @@ function StationForm({
               )}
             </div>
           )}
-          {overall === "unrated" && <div className="mt-1 font-mono text-[10px] text-ink/50">Keine Toleranz in DB → wird als "unbewertet" gespeichert.</div>}
+          {overall === "unrated" && <div className="mt-1 font-mono text-[10px] text-ink/50">Keine Toleranz in DB → wird als "unrated" gespeichert.</div>}
         </div>
       )}
 
-      <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notiz (optional)" rows={2} className="w-full border border-ink/20 bg-transparent px-2 py-1 font-mono text-xs" />
+      <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" rows={2} className="w-full border border-ink/20 bg-transparent px-2 py-1 font-mono text-xs" />
 
       <div className="flex gap-2">
         <button onClick={submit} disabled={!overall} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-          Ergebnis bestätigen
+          Confirm result
         </button>
-        <button onClick={onRelease} className="border border-ink/25 px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] hover:border-ink">Freigeben</button>
+        <button onClick={onRelease} className="border border-ink/25 px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] hover:border-ink">Release</button>
       </div>
     </div>
   );
@@ -503,14 +503,14 @@ function formatVals(m: any): string {
   if (!m) return "—";
   if (Array.isArray(m?.values)) return m.values.map((v: any) => v == null ? "—" : v).join(", ");
   if (m?.value != null) return String(m.value);
-  if (m?.visual) return m.visual === "ok" ? "i.O." : "n.i.O.";
+  if (m?.visual) return m.visual === "ok" ? "OK" : "n.OK";
   return "—";
 }
 
-// ---------- Rücksendungen ----------
+// ---------- Returns ----------
 
 function ReturnsTab({ worker, returns, jobs, products, onDone }: { worker: string; returns: JobReturn[]; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (returns.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine offenen Rücksendungen.</div>;
+  if (returns.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine openen Returns.</div>;
   return (
     <div className="space-y-3">
       {returns.map((r) => {
@@ -521,7 +521,7 @@ function ReturnsTab({ worker, returns, jobs, products, onDone }: { worker: strin
             <div>
               {p && j && <ProductChip product={p} orderNumber={j.order_number} />}
               <div className="mt-1 font-mono text-[10px] text-ink/50">
-                <b>{r.quantity}</b> fehlerhafte Stk · Kunde {j?.customer ?? "—"} · Lieferant {j?.supplier ?? "—"}
+                <b>{r.quantity}</b> defective pcs · Customer {j?.customer ?? "—"} · Supplier {j?.supplier ?? "—"}
               </div>
               {r.note && <div className="mt-1 font-mono text-xs">{r.note}</div>}
             </div>
@@ -529,7 +529,7 @@ function ReturnsTab({ worker, returns, jobs, products, onDone }: { worker: strin
               onClick={async () => { await completeReturn(r.id, worker); onDone(); }}
               className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85"
             >
-              Rücksendung erledigt
+              Return handled
             </button>
           </div>
         );
@@ -541,7 +541,7 @@ function ReturnsTab({ worker, returns, jobs, products, onDone }: { worker: strin
 // ---------- Marking ----------
 
 function MarkingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Produkte in Lasermarkierung.</div>;
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Products in Laser marking.</div>;
   return (
     <div className="space-y-3">
       {jobs.map((j) => {
@@ -552,11 +552,11 @@ function MarkingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
           <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/20 bg-card p-4">
             <div>
               {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
-              <div className="mt-1 font-mono text-[10px] text-ink/50">Menge {j.incoming_qty ?? j.quantity_total} · Gravur: <b>{text}</b></div>
-              <div className="mt-0.5 font-mono text-[10px] text-ink/50">Nächste Schritte: {pack} · {j.shipment_mode === "air" ? "Luftfracht" : j.shipment_mode === "sea" ? "Seefracht" : "—"} → {j.destination_country ?? "—"}</div>
+              <div className="mt-1 font-mono text-[10px] text-ink/50">Qty {j.incoming_qty ?? j.quantity_total} · Engraving: <b>{text}</b></div>
+              <div className="mt-0.5 font-mono text-[10px] text-ink/50">Next steps: {pack} · {j.shipment_mode === "air" ? "Air freight" : j.shipment_mode === "sea" ? "Sea freight" : "—"} → {j.destination_country ?? "—"}</div>
             </div>
             <button onClick={async () => { await completeMarking(j.id); onDone(); }} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
-              Markierung abgeschlossen
+              Marking done
             </button>
           </div>
         );
@@ -568,7 +568,7 @@ function MarkingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
 // ---------- Packing ----------
 
 function PackingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Produkte in Verpackung.</div>;
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Products in Packing.</div>;
   return (
     <div className="space-y-3">
       {jobs.map((j) => {
@@ -578,11 +578,11 @@ function PackingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
           <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/20 bg-card p-4">
             <div>
               {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
-              <div className="mt-1 font-mono text-[10px] text-ink/50">Menge {j.incoming_qty ?? j.quantity_total} · Verpackung: <b>{pack}</b></div>
-              <div className="mt-0.5 font-mono text-[10px] text-ink/50">Versand: {j.shipment_mode === "air" ? "Luftfracht" : j.shipment_mode === "sea" ? "Seefracht" : "—"} → <b>{j.destination_country ?? "—"}</b></div>
+              <div className="mt-1 font-mono text-[10px] text-ink/50">Qty {j.incoming_qty ?? j.quantity_total} · Packing: <b>{pack}</b></div>
+              <div className="mt-0.5 font-mono text-[10px] text-ink/50">Shipment: {j.shipment_mode === "air" ? "Air freight" : j.shipment_mode === "sea" ? "Sea freight" : "—"} → <b>{j.destination_country ?? "—"}</b></div>
             </div>
             <button onClick={async () => { await completePacking(j.id); onDone(); }} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
-              Verpackt → Versand
+              Verpackt → Shipment
             </button>
           </div>
         );
@@ -591,11 +591,11 @@ function PackingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
   );
 }
 
-// ---------- Versand (Arbeiter bestätigt) ----------
+// ---------- Shipment (Workers bestätigt) ----------
 
 function ShipmentTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
   void worker;
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Aufträge im Versand vorbereitet.</div>;
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Jobs im Shipment vorbereitet.</div>;
   return (
     <div className="space-y-3">
       {jobs.map((j) => {
@@ -606,12 +606,12 @@ function ShipmentTab({ worker, jobs, products, onDone }: { worker: string; jobs:
             <div>
               {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
               <div className="mt-1 font-mono text-[10px] text-ink/50">
-                Menge {j.incoming_qty ?? j.quantity_total} · {j.shipment_mode === "air" ? "Luftfracht" : "Seefracht"} → <b>{j.destination_country}</b> · Verpackung: {pack}
+                Qty {j.incoming_qty ?? j.quantity_total} · {j.shipment_mode === "air" ? "Air freight" : "Sea freight"} → <b>{j.destination_country}</b> · Packing: {pack}
               </div>
-              <div className="mt-1 font-mono text-[10px] text-ink/50">Kunde: {j.customer}</div>
+              <div className="mt-1 font-mono text-[10px] text-ink/50">Customer: {j.customer}</div>
             </div>
             <button onClick={async () => { await confirmShipment(j.id); onDone(); }} className="bg-ok px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85">
-              Versendet — fertig
+              Shipped — done
             </button>
           </div>
         );

@@ -8,7 +8,7 @@ import { ProductChip } from "./Shell";
 // Full-history timeline for completed (done) orders.
 // Every entry is derived from timestamps already stored on test_jobs / job_stations / job_returns.
 
-export function ArchiveTab({ jobs, products }: { jobs: TestJob[]; products: Product[] }) {
+export function ArchiveeTab({ jobs, products }: { jobs: TestJob[]; products: Product[] }) {
   const done = useMemo(
     () => jobs.filter((j) => j.status === "done").sort((a, b) => (b.shipped_at ?? b.packed_at ?? b.created_at).localeCompare(a.shipped_at ?? a.packed_at ?? a.created_at)),
     [jobs],
@@ -36,11 +36,11 @@ export function ArchiveTab({ jobs, products }: { jobs: TestJob[]; products: Prod
     <div className="space-y-4">
       <div className="border border-ink/20 bg-card px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Archiv-Suche</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Archivee search</span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Referenz, Order-Nr., Kunde, Lieferant oder Prüf-Etikett…"
+            placeholder="Reference, Order no., Customer, Supplier oder Inspection tag…"
             className="flex-1 border-b border-ink/25 bg-transparent py-1 font-mono text-sm outline-none focus:border-ink"
           />
           <span className="font-mono text-[10px] text-ink/50">{filtered.length} / {done.length}</span>
@@ -49,12 +49,12 @@ export function ArchiveTab({ jobs, products }: { jobs: TestJob[]; products: Prod
 
       <div className="border border-ink/20 bg-card">
         <div className="border-b border-ink/15 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">
-          Abgeschlossene Bestellungen · Belegkette für SAP
+          Completede Orderen · Document chain für SAP
         </div>
         <div className="divide-y divide-ink/10">
           {filtered.length === 0 && (
             <div className="px-4 py-6 text-center font-mono text-xs text-ink/40">
-              — noch keine abgeschlossenen Aufträge —
+              — no completed orders yet —
             </div>
           )}
           {filtered.map((j) => {
@@ -69,8 +69,8 @@ export function ArchiveTab({ jobs, products }: { jobs: TestJob[]; products: Prod
                   <div className="flex flex-wrap items-center gap-3">
                     {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
                     <span className="font-mono text-[10px] text-ink/50">
-                      {j.customer ?? "—"} ← {j.supplier ?? "—"} · {j.incoming_qty ?? j.quantity_total} Stk
-                      {j.shipment_mode && ` · ${j.shipment_mode === "air" ? "Luft" : "See"} → ${j.destination_country ?? "—"}`}
+                      {j.customer ?? "—"} ← {j.supplier ?? "—"} · {j.incoming_qty ?? j.quantity_total} pcs
+                      {j.shipment_mode && ` · ${j.shipment_mode === "air" ? "Air" : "Sea"} → ${j.destination_country ?? "—"}`}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -78,7 +78,7 @@ export function ArchiveTab({ jobs, products }: { jobs: TestJob[]; products: Prod
                       {j.shipped_at ? new Date(j.shipped_at).toLocaleDateString() : ""}
                     </span>
                     <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">
-                      {isOpen ? "▲ Belegkette" : "▼ Belegkette"}
+                      {isOpen ? "▲ Document chain" : "▼ Document chain"}
                     </span>
                   </div>
                 </button>
@@ -120,9 +120,9 @@ function Timeline({
   // 1) Order created (SAP entry point)
   entries.push({
     ts: job.created_at,
-    phase: "SAP · Bestellung",
-    title: `Bestellung ${job.order_number ?? "—"} angelegt`,
-    detail: `${job.customer ?? "Kunde ?"} ← ${job.supplier ?? "Lieferant ?"} · ${job.incoming_qty ?? job.quantity_total} Stk · Ref ${product?.reference ?? "?"}`,
+    phase: "SAP · Order",
+    title: `Order ${job.order_number ?? "—"} created`,
+    detail: `${job.customer ?? "Customer ?"} ← ${job.supplier ?? "Supplier ?"} · ${job.incoming_qty ?? job.quantity_total} pcs · Ref ${product?.reference ?? "?"}`,
     tone: "info",
   });
 
@@ -130,9 +130,9 @@ function Timeline({
   if (job.received_at) {
     entries.push({
       ts: job.received_at,
-      phase: "Lager · Warenannahme",
-      title: "Wareneingang gebucht",
-      detail: job.storage_location ? `Lagerort: ${job.storage_location}` : undefined,
+      phase: "Lager · Goods receipt",
+      title: "Goods receipt booked",
+      detail: job.storage_location ? `Storage location: ${job.storage_location}` : undefined,
       actor: job.received_by,
     });
   }
@@ -141,9 +141,9 @@ function Timeline({
   if (job.transported_at) {
     entries.push({
       ts: job.transported_at,
-      phase: "Logistik · Transport",
-      title: "Ware ins Prüfzentrum gebracht",
-      detail: job.inspection_tag ? `Prüf-Etikett: ${job.inspection_tag}` : undefined,
+      phase: "Logistics · Transport",
+      title: "Goods moved to inspection center",
+      detail: job.inspection_tag ? `Inspection tag: ${job.inspection_tag}` : undefined,
       actor: job.transported_by,
     });
   }
@@ -156,13 +156,13 @@ function Timeline({
     let detail: string | undefined;
     if (s.measurements && typeof s.measurements === "object") {
       const vals = Object.values(s.measurements).filter((v) => v != null);
-      if (vals.length) detail = `Messwerte: ${vals.join(", ")}${cp?.unit ? ` ${cp.unit}` : ""}`;
+      if (vals.length) detail = `Measurements: ${vals.join(", ")}${cp?.unit ? ` ${cp.unit}` : ""}`;
     }
     if (s.note) detail = detail ? `${detail} · ${s.note}` : s.note;
     entries.push({
       ts: s.completed_at,
-      phase: "QC · Prüfstation",
-      title: `${label}: ${s.result === "ok" ? "OK" : s.result === "fail" ? "Fail" : "geprüft"}`,
+      phase: "QC · Inspection station",
+      title: `${label}: ${s.result === "ok" ? "OK" : s.result === "fail" ? "Fail" : "checked"}`,
       detail,
       actor: s.claimed_by,
       tone: s.result === "fail" ? "fail" : s.result === "ok" ? "ok" : undefined,
@@ -171,13 +171,13 @@ function Timeline({
 
   // 5) Decision
   if (job.decision) {
-    const label = job.decision === "pass" ? "Freigabe erteilt" : job.decision === "reject" ? "Gesperrt" : "Nachprüfung";
+    const label = job.decision === "pass" ? "Released" : job.decision === "reject" ? "Blocked" : "Re-inspection";
     entries.push({
       ts: null, // no dedicated column; sits between last station and marking/packing
-      phase: "Büro · Entscheidung",
+      phase: "Office · Entscheidung",
       title: label,
       detail: [
-        job.defect_count != null && job.defect_count > 0 ? `${job.defect_count} defekte Stk` : null,
+        job.defect_count != null && job.defect_count > 0 ? `${job.defect_count} defective pcs` : null,
         job.decision_note,
         job.defect_note,
       ].filter(Boolean).join(" · ") || undefined,
@@ -190,8 +190,8 @@ function Timeline({
     if (r.status === "done" && r.done_at) {
       entries.push({
         ts: r.done_at,
-        phase: "Logistik · Rücksendung",
-        title: `Rücksendung abgewickelt · ${r.quantity} Stk`,
+        phase: "Logistics · Return",
+        title: `Return processed · ${r.quantity} pcs`,
         detail: r.note ?? undefined,
         actor: r.done_by,
         tone: "warn",
@@ -203,8 +203,8 @@ function Timeline({
   if (job.marked_at) {
     entries.push({
       ts: job.marked_at,
-      phase: "Produktion · Marking",
-      title: "Lasermarkierung abgeschlossen",
+      phase: "Production · Marking",
+      title: "Laser marking abgeschlossen",
       detail: job.laser_text ?? product?.laser_text ?? undefined,
     });
   }
@@ -213,8 +213,8 @@ function Timeline({
   if (job.packed_at) {
     entries.push({
       ts: job.packed_at,
-      phase: "Produktion · Packing",
-      title: "Verpackung abgeschlossen",
+      phase: "Production · Packing",
+      title: "Packing abgeschlossen",
       detail: job.packing_type ?? product?.packing_type ?? undefined,
     });
   }
@@ -223,9 +223,9 @@ function Timeline({
   if (job.shipped_at) {
     entries.push({
       ts: job.shipped_at,
-      phase: "SAP · Versand",
-      title: "Ware versendet",
-      detail: `${job.shipment_mode === "air" ? "Luftfracht" : job.shipment_mode === "sea" ? "Seefracht" : "—"} → ${job.destination_country ?? "—"}`,
+      phase: "SAP · Shipment",
+      title: "Goods shipped",
+      detail: `${job.shipment_mode === "air" ? "Air freight" : job.shipment_mode === "sea" ? "Sea freight" : "—"} → ${job.destination_country ?? "—"}`,
       tone: "info",
     });
   }
@@ -243,14 +243,14 @@ function Timeline({
     <div className="space-y-4">
       {/* SAP summary strip */}
       <div className="grid gap-2 border border-ink/20 bg-paper p-3 text-xs md:grid-cols-4">
-        <SapCell label="Order-Nr." value={job.order_number} />
-        <SapCell label="Kunde" value={job.customer} />
-        <SapCell label="Lieferant" value={job.supplier} />
-        <SapCell label="Referenz" value={product?.reference} />
-        <SapCell label="Menge" value={`${job.incoming_qty ?? job.quantity_total} Stk`} />
-        <SapCell label="Defekt / Retour" value={job.defect_count ? `${job.defect_count} Stk` : "0"} />
-        <SapCell label="Versand" value={job.shipment_mode ? `${job.shipment_mode === "air" ? "Luft" : "See"} → ${job.destination_country ?? "?"}` : "—"} />
-        <SapCell label="Prüf-Etikett" value={job.inspection_tag} />
+        <SapCell label="Order no." value={job.order_number} />
+        <SapCell label="Customer" value={job.customer} />
+        <SapCell label="Supplier" value={job.supplier} />
+        <SapCell label="Reference" value={product?.reference} />
+        <SapCell label="Qty" value={`${job.incoming_qty ?? job.quantity_total} pcs`} />
+        <SapCell label="Defective / Return" value={job.defect_count ? `${job.defect_count} pcs` : "0"} />
+        <SapCell label="Shipment" value={job.shipment_mode ? `${job.shipment_mode === "air" ? "Air" : "Sea"} → ${job.destination_country ?? "?"}` : "—"} />
+        <SapCell label="Inspection tag" value={job.inspection_tag} />
       </div>
 
       <ol className="relative border-l border-ink/25 pl-6">

@@ -7,8 +7,8 @@ import { WorkerView } from "@/components/qc/WorkerView";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Prüfstrecke — QC-System" },
-      { name: "description", content: "Qualitätskontrolle: Produkte, Toleranzen, Prüfaufträge, Lasermarkierung, Verpackung." },
+      { title: "Inspection line — QC-System" },
+      { name: "description", content: "Qualitätskontrolle: Products, Toleranzen, Prüfaufträge, Laser marking, Packing." },
     ],
   }),
   component: HomePage,

@@ -6,9 +6,9 @@ import {
   type Product, type Tolerances, type TestJob, type Checklist,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
-import { ArchiveTab } from "./ArchiveTab";
+import { ArchiveeTab } from "./ArchiveeTab";
 
-const PACKING = ["Karton einzeln", "Blister", "Sammelkiste", "Kunststoffbeutel"];
+const PACKING = ["Single carton", "Blister", "Bulk crate", "Plastic bag"];
 
 export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
   const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "shipment" | "archive">("overview");
@@ -37,20 +37,20 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
 
   return (
     <AppShell
-      title="Büro-Konsole"
-      subtitle="Bestellung · Lager · QC · Freigabe · Versand"
+      title="Office console"
+      subtitle="Order · Warehouse · QC · Release · Shipment"
       role="office"
       onSwitchRole={onSwitchRole}
       tab={tab}
       setTab={(t) => setTab(t as typeof tab)}
       tabs={[
-        { id: "overview", label: "Übersicht" },
-        { id: "products", label: "Produkte", badge: products.data.length },
-        { id: "order", label: "Bestellung" },
-        { id: "book", label: "QC-Planung", badge: counts.stock },
-        { id: "decisions", label: "Freigaben", badge: counts.decision },
-        { id: "shipment", label: "Versand", badge: counts.shipment },
-        { id: "archive", label: "Archiv", badge: counts.done },
+        { id: "overview", label: "Overview" },
+        { id: "products", label: "Products", badge: products.data.length },
+        { id: "order", label: "Order" },
+        { id: "book", label: "QC planning", badge: counts.stock },
+        { id: "decisions", label: "Releases", badge: counts.decision },
+        { id: "shipment", label: "Shipment", badge: counts.shipment },
+        { id: "archive", label: "Archive", badge: counts.done },
       ]}
     >
       <JobLocator jobs={jobs.data} products={products.data} />
@@ -60,7 +60,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
       {tab === "book" && <BookingTab jobs={jobs.data.filter((j) => j.status === "in_stock")} products={products.data} onDone={jobs.refetch} />}
       {tab === "decisions" && <DecisionsTab jobs={jobs.data} products={products.data} onDone={jobs.refetch} />}
       {tab === "shipment" && <ShipmentTab jobs={jobs.data.filter((j) => j.status === "in_shipment")} products={products.data} onDone={jobs.refetch} />}
-      {tab === "archive" && <ArchiveTab jobs={jobs.data} products={products.data} />}
+      {tab === "archive" && <ArchiveeTab jobs={jobs.data} products={products.data} />}
     </AppShell>
   );
 }
@@ -68,17 +68,17 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
 // ---------- Job Locator (search) ----------
 
 const STATUS_LABEL: Record<string, string> = {
-  awaiting_receipt: "Warenannahme",
-  in_stock: "Auf Lager",
-  in_transport: "Transport zur Prüfung",
-  scheduled: "QC geplant",
-  in_testing: "In Prüfung",
-  awaiting_decision: "Wartet auf Freigabe",
-  in_marking: "Lasermarkierung",
-  in_packing: "Verpackung",
-  in_shipment: "Versand",
-  done: "Abgeschlossen",
-  rejected: "Gesperrt",
+  awaiting_receipt: "Goods receipt",
+  in_stock: "In stock",
+  in_transport: "Transport to inspection",
+  scheduled: "QC scheduled",
+  in_testing: "In inspection",
+  awaiting_decision: "Awaiting release",
+  in_marking: "Laser marking",
+  in_packing: "Packing",
+  in_shipment: "Shipment",
+  done: "Completed",
+  rejected: "Blocked",
 };
 
 function JobLocator({ jobs, products }: { jobs: TestJob[]; products: Product[] }) {
@@ -101,11 +101,11 @@ function JobLocator({ jobs, products }: { jobs: TestJob[]; products: Product[] }
   return (
     <div className="mb-4 border border-ink/20 bg-card">
       <div className="flex items-center gap-3 px-4 py-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Suche</span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Search</span>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Referenz, Order-Nr., Kunde oder Lieferant …"
+          placeholder="Reference, Order no., Customer oder Supplier …"
           className="flex-1 border-b border-ink/25 bg-transparent py-1 font-mono text-sm outline-none focus:border-ink"
         />
         {q && <button onClick={() => setQ("")} className="font-mono text-[10px] text-ink/50 hover:text-ink">×</button>}
@@ -113,7 +113,7 @@ function JobLocator({ jobs, products }: { jobs: TestJob[]; products: Product[] }
       {query && (
         <div className="divide-y divide-ink/10 border-t border-ink/10">
           {results.length === 0 && (
-            <div className="px-4 py-3 font-mono text-xs text-ink/40">Keine Treffer.</div>
+            <div className="px-4 py-3 font-mono text-xs text-ink/40">No matches.</div>
           )}
           {results.map(({ j, p }) => (
             <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-2">
@@ -121,7 +121,7 @@ function JobLocator({ jobs, products }: { jobs: TestJob[]; products: Product[] }
                 {p && <ProductChip product={p} orderNumber={j.order_number} />}
                 <span className="font-mono text-[10px] text-ink/50">
                   {j.customer ?? "—"} ← {j.supplier ?? "—"}
-                  {j.storage_location && ` · Ort: ${j.storage_location}`}
+                  {j.storage_location && ` · Location: ${j.storage_location}`}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -151,32 +151,32 @@ function Overview({
   const pOf = (id: string) => products.find((p) => p.id === id);
 
   const groups = [
-    { key: "receipt", label: "Warenannahme", jobs: jobs.filter((j) => j.status === "awaiting_receipt") },
-    { key: "stock", label: "Auf Lager", jobs: jobs.filter((j) => j.status === "in_stock") },
-    { key: "transport", label: "Transport → Prüfung", jobs: jobs.filter((j) => j.status === "in_transport") },
-    { key: "testing", label: "In Prüfung / Geplant", jobs: jobs.filter((j) => j.status === "in_testing" || j.status === "scheduled") },
-    { key: "decision", label: "Wartet auf Freigabe", jobs: jobs.filter((j) => j.status === "awaiting_decision") },
-    { key: "marking", label: "Lasermarkierung", jobs: jobs.filter((j) => j.status === "in_marking") },
-    { key: "packing", label: "Verpackung", jobs: jobs.filter((j) => j.status === "in_packing") },
-    { key: "shipment", label: "Versand", jobs: jobs.filter((j) => j.status === "in_shipment") },
-    { key: "done", label: "Abgeschlossen", jobs: jobs.filter((j) => j.status === "done") },
-    { key: "rejected", label: "Gesperrt", jobs: jobs.filter((j) => j.status === "rejected") },
+    { key: "receipt", label: "Goods receipt", jobs: jobs.filter((j) => j.status === "awaiting_receipt") },
+    { key: "stock", label: "In stock", jobs: jobs.filter((j) => j.status === "in_stock") },
+    { key: "transport", label: "Transport → Inspection", jobs: jobs.filter((j) => j.status === "in_transport") },
+    { key: "testing", label: "In inspection / Scheduled", jobs: jobs.filter((j) => j.status === "in_testing" || j.status === "scheduled") },
+    { key: "decision", label: "Awaiting release", jobs: jobs.filter((j) => j.status === "awaiting_decision") },
+    { key: "marking", label: "Laser marking", jobs: jobs.filter((j) => j.status === "in_marking") },
+    { key: "packing", label: "Packing", jobs: jobs.filter((j) => j.status === "in_packing") },
+    { key: "shipment", label: "Shipment", jobs: jobs.filter((j) => j.status === "in_shipment") },
+    { key: "done", label: "Completed", jobs: jobs.filter((j) => j.status === "done") },
+    { key: "rejected", label: "Blocked", jobs: jobs.filter((j) => j.status === "rejected") },
   ];
 
   return (
     <div className="space-y-6">
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
-        <StatCard label="Warenannahme" value={counts.receipt} />
-        <StatCard label="Auf Lager" value={counts.stock} />
+        <StatCard label="Goods receipt" value={counts.receipt} />
+        <StatCard label="In stock" value={counts.stock} />
         <StatCard label="Transport" value={counts.transport} tone="accent" />
-        <StatCard label="In Testing" value={counts.testing} tone="accent" />
-        <StatCard label="Wartet Entscheid" value={counts.decision} tone="accent" />
-        <StatCard label="Rücksendungen offen" value={counts.returns} tone="destructive" />
+        <StatCard label="In testing" value={counts.testing} tone="accent" />
+        <StatCard label="Awaiting decision" value={counts.decision} tone="accent" />
+        <StatCard label="Open returns" value={counts.returns} tone="destructive" />
         <StatCard label="Marking" value={counts.marking} />
         <StatCard label="Packing" value={counts.packing} />
-        <StatCard label="Versand" value={counts.shipment} />
-        <StatCard label="Fertig" value={counts.done} tone="ok" />
-        <StatCard label="Gesperrt" value={counts.rejected} tone="destructive" />
+        <StatCard label="Shipment" value={counts.shipment} />
+        <StatCard label="Done" value={counts.done} tone="ok" />
+        <StatCard label="Blocked" value={counts.rejected} tone="destructive" />
       </div>
 
       <div className="space-y-2">
@@ -199,8 +199,8 @@ function Overview({
                       <div className="flex flex-wrap items-center gap-3">
                         {p && <ProductChip product={p} orderNumber={j.order_number} />}
                         <span className="font-mono text-[10px] text-ink/50">
-                          {j.customer ?? "—"} ← {j.supplier ?? "—"} · {j.incoming_qty ?? j.quantity_total} Stk
-                          {j.storage_location && ` · Ort: ${j.storage_location}`}
+                          {j.customer ?? "—"} ← {j.supplier ?? "—"} · {j.incoming_qty ?? j.quantity_total} pcs
+                          {j.storage_location && ` · Location: ${j.storage_location}`}
                         </span>
                       </div>
                       <StatusPill status={j.status} />
@@ -240,7 +240,7 @@ function ProductsTab({
       <NewProductForm onDone={() => { products.refetch(); tolerances.refetch(); }} />
       <div className="border border-ink/20 bg-card">
         <div className="border-b border-ink/15 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">
-          Katalog · {products.data.length}
+          Catalog · {products.data.length}
         </div>
         <div className="divide-y divide-ink/10">
           {products.data.map((p) => (
@@ -307,23 +307,23 @@ function NewProductForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="border border-ink/20 bg-card p-5">
-      <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Neues Produkt</div>
-      <h2 className="mt-1 font-display text-xl">Referenz anlegen</h2>
+      <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">New product</div>
+      <h2 className="mt-1 font-display text-xl">Create reference</h2>
 
-      <Field label="Referenz *"><input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="61907-2RS-C3-ZEN" className={inputCls} /></Field>
+      <Field label="Reference *"><input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="61907-2RS-C3-ZEN" className={inputCls} /></Field>
       <div className="mt-2 grid grid-cols-3 gap-2">
-        <Field label="Innen-Ø (mm)"><input value={inner} onChange={(e) => setInner(e.target.value)} inputMode="decimal" className={inputCls} /></Field>
-        <Field label="Außen-Ø (mm)"><input value={outer} onChange={(e) => setOuter(e.target.value)} inputMode="decimal" className={inputCls} /></Field>
-        <Field label="Breite (mm)"><input value={width} onChange={(e) => setWidth(e.target.value)} inputMode="decimal" className={inputCls} /></Field>
+        <Field label="Inner Ø (mm)"><input value={inner} onChange={(e) => setInner(e.target.value)} inputMode="decimal" className={inputCls} /></Field>
+        <Field label="Outer Ø (mm)"><input value={outer} onChange={(e) => setOuter(e.target.value)} inputMode="decimal" className={inputCls} /></Field>
+        <Field label="Width (mm)"><input value={width} onChange={(e) => setWidth(e.target.value)} inputMode="decimal" className={inputCls} /></Field>
       </div>
 
       <label className="mt-4 flex items-center gap-2 font-mono text-xs">
         <input type="checkbox" checked={laser} onChange={(e) => setLaser(e.target.checked)} />
-        Lasermarkierung
+        Laser marking
       </label>
-      {laser && <input value={laserText} onChange={(e) => setLaserText(e.target.value)} placeholder="Gravurtext (Standard)" className={"mt-2 " + inputCls} />}
+      {laser && <input value={laserText} onChange={(e) => setLaserText(e.target.value)} placeholder="Engraving text (default)" className={"mt-2 " + inputCls} />}
 
-      <Field label="Verpackung (Standard)">
+      <Field label="Packing (default)">
         <select value={pack} onChange={(e) => setPack(e.target.value)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
           {PACKING.map((p) => <option key={p}>{p}</option>)}
         </select>
@@ -331,7 +331,7 @@ function NewProductForm({ onDone }: { onDone: () => void }) {
 
       {err && <div className="mt-3 border border-destructive/40 bg-destructive/10 p-2 font-mono text-[11px] text-destructive">{err}</div>}
       <button onClick={save} disabled={!ref.trim() || busy} className="mt-6 w-full bg-ink px-4 py-3 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-        {busy ? "Speichern…" : "Speichern"}
+        {busy ? "Saving…" : "Save"}
       </button>
     </div>
   );
@@ -390,7 +390,7 @@ function TolerancesEditor({
     }
     try {
       await upsertTolerances(product.id, patch);
-      setMsg("Gespeichert.");
+      setMsg("Saved.");
       onSaved();
     } catch (e: any) { setMsg(e.message); }
     setBusy(false);
@@ -399,7 +399,7 @@ function TolerancesEditor({
   return (
     <div className="border-t border-ink/10 bg-muted/50 p-4">
       <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">
-        Toleranzen (Abweichung μm bei Maßen)
+        Tolerances (μm deviation for dimensions)
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {rows.map((r) => (
@@ -416,7 +416,7 @@ function TolerancesEditor({
       </div>
       <div className="mt-3 flex items-center gap-3">
         <button onClick={save} disabled={busy} className="bg-ink px-4 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-paper disabled:opacity-30">
-          {busy ? "…" : "Toleranzen speichern"}
+          {busy ? "…" : "Save tolerances"}
         </button>
         {msg && <span className="font-mono text-[10px] text-ink/60">{msg}</span>}
       </div>
@@ -424,7 +424,7 @@ function TolerancesEditor({
   );
 }
 
-// ---------- Bestellung anlegen ----------
+// ---------- Create order ----------
 
 function OrderTab({
   products, tolerances, onDone,
@@ -459,7 +459,7 @@ function OrderTab({
 
   async function submit() {
     if (!pid || !orderNumber.trim() || !customer.trim() || !supplier.trim()) {
-      setMsg("Order-Nr., Kunde und Lieferant sind Pflicht.");
+      setMsg("Order no., customer and supplier are required.");
       return;
     }
     setBusy(true); setMsg(null);
@@ -478,7 +478,7 @@ function OrderTab({
         office_note: note.trim() || null,
         checklist: cl,
       });
-      setMsg("Bestellung angelegt — wartet auf Warenannahme.");
+      setMsg("Order created — awaiting goods receipt.");
       setOrderNumber(""); setCustomer(""); setSupplier(""); setLaserText(""); setNote("");
       onDone();
     } catch (e: any) { setMsg(e.message); }
@@ -486,52 +486,52 @@ function OrderTab({
   }
 
   const checkboxes: { key: keyof typeof cl; label: string }[] = [
-    { key: "check_inner_dia", label: "内径 Innen-Ø" },
-    { key: "check_outer_dia", label: "外径 Außen-Ø" },
-    { key: "check_width", label: "高度 Breite" },
-    { key: "check_noise", label: "噪音 Geräusch" },
+    { key: "check_inner_dia", label: "内径 Inner Ø" },
+    { key: "check_outer_dia", label: "外径 Outer Ø" },
+    { key: "check_width", label: "高度 Width" },
+    { key: "check_noise", label: "噪音 Noise" },
     { key: "check_vibration", label: "振动 Vibration" },
-    { key: "check_radial_play", label: "游隙 Radialspiel" },
-    { key: "check_hardness", label: "硬度 Härte" },
-    { key: "check_appearance", label: "外观 Optik" },
-    { key: "check_spin", label: "转动 Lauf" },
-    { key: "check_cage", label: "保持器 Käfig" },
-    { key: "check_oil_hole", label: "油孔 Öl-Bohrung" },
-    { key: "check_chamfer", label: "倒角 Fase" },
+    { key: "check_radial_play", label: "游隙 Radial play" },
+    { key: "check_hardness", label: "硬度 Hardness" },
+    { key: "check_appearance", label: "外观 Appearance" },
+    { key: "check_spin", label: "转动 Spin" },
+    { key: "check_cage", label: "保持器 Cage" },
+    { key: "check_oil_hole", label: "油孔 Oil hole" },
+    { key: "check_chamfer", label: "倒角 Chamfer" },
   ];
 
   return (
     <div className="grid gap-6 lg:grid-cols-[520px,1fr]">
       <div className="border border-ink/20 bg-card p-5">
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Neue Bestellung</div>
-        <h2 className="mt-1 font-display text-xl">Wareneingang anmelden</h2>
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">New order</div>
+        <h2 className="mt-1 font-display text-xl">Register goods receipt</h2>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Order-Nr. *"><input value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} className={inputCls} placeholder="PO-2026-0142" /></Field>
-          <Field label="Referenz *">
+          <Field label="Order no. *"><input value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} className={inputCls} placeholder="PO-2026-0142" /></Field>
+          <Field label="Reference *">
             <select value={pid} onChange={(e) => setPid(e.target.value)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
-              <option value="">— wählen —</option>
+              <option value="">— select —</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.reference}</option>)}
             </select>
           </Field>
-          <Field label="Kunde *"><input value={customer} onChange={(e) => setCustomer(e.target.value)} className={inputCls} /></Field>
-          <Field label="Lieferant *"><input value={supplier} onChange={(e) => setSupplier(e.target.value)} className={inputCls} /></Field>
+          <Field label="Customer *"><input value={customer} onChange={(e) => setCustomer(e.target.value)} className={inputCls} /></Field>
+          <Field label="Supplier *"><input value={supplier} onChange={(e) => setSupplier(e.target.value)} className={inputCls} /></Field>
           <Field label="Incoming Quantity"><input type="number" min={1} value={incoming} onChange={(e) => setIncoming(parseInt(e.target.value || "0", 10))} className={inputCls} /></Field>
-          <Field label="Controlled Quantity (allg.)"><input type="number" min={1} value={controlled} onChange={(e) => setControlled(parseInt(e.target.value || "0", 10))} className={inputCls} /></Field>
+          <Field label="Controlled quantity (general)"><input type="number" min={1} value={controlled} onChange={(e) => setControlled(parseInt(e.target.value || "0", 10))} className={inputCls} /></Field>
         </div>
 
-        <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Prüfmenge pro Maß</div>
+        <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Sample size per dimension</div>
         <div className="mt-2 grid grid-cols-3 gap-2">
-          <Field label="Innen-Ø"><input type="number" min={0} value={sInner} onChange={(e) => setSInner(parseInt(e.target.value || "0", 10))} className={inputCls} disabled={!cl.check_inner_dia} /></Field>
-          <Field label="Außen-Ø"><input type="number" min={0} value={sOuter} onChange={(e) => setSOuter(parseInt(e.target.value || "0", 10))} className={inputCls} disabled={!cl.check_outer_dia} /></Field>
-          <Field label="Breite"><input type="number" min={0} value={sWidth} onChange={(e) => setSWidth(parseInt(e.target.value || "0", 10))} className={inputCls} disabled={!cl.check_width} /></Field>
+          <Field label="Inner Ø"><input type="number" min={0} value={sInner} onChange={(e) => setSInner(parseInt(e.target.value || "0", 10))} className={inputCls} disabled={!cl.check_inner_dia} /></Field>
+          <Field label="Outer Ø"><input type="number" min={0} value={sOuter} onChange={(e) => setSOuter(parseInt(e.target.value || "0", 10))} className={inputCls} disabled={!cl.check_outer_dia} /></Field>
+          <Field label="Width"><input type="number" min={0} value={sWidth} onChange={(e) => setSWidth(parseInt(e.target.value || "0", 10))} className={inputCls} disabled={!cl.check_width} /></Field>
         </div>
 
-        <Field label="Lasermarkierung Text (Freitext, leer = kein Laser)">
+        <Field label="Laser marking text (free text, empty = no laser)">
           <input value={laserText} onChange={(e) => setLaserText(e.target.value)} className={inputCls} placeholder={product?.laser_text ?? "—"} />
         </Field>
 
-        <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Was soll geprüft werden?</div>
+        <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">What should be inspected?</div>
         <div className="mt-2 grid grid-cols-2 gap-1">
           {checkboxes.map((cb) => {
             const cp = CHECKPOINTS.find((c) => c.checklistKey === cb.key);
@@ -541,41 +541,41 @@ function OrderTab({
               <label key={cb.key} className="flex items-center gap-2 font-mono text-xs">
                 <input type="checkbox" checked={cl[cb.key] as boolean} onChange={(e) => setCl({ ...cl, [cb.key]: e.target.checked })} />
                 <span>{cb.label}</span>
-                {noTol && cb.key !== "check_appearance" && <span className="rounded-sm bg-ink/10 px-1 text-[9px] uppercase tracking-widest text-ink/50">keine tol.</span>}
+                {noTol && cb.key !== "check_appearance" && <span className="rounded-sm bg-ink/10 px-1 text-[9px] uppercase tracking-widest text-ink/50">no tol.</span>}
               </label>
             );
           })}
         </div>
 
-        <Field label="Zusatz-Anweisung">
+        <Field label="Additional instruction">
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="mt-1 w-full border border-ink/20 bg-transparent px-2 py-1 font-mono text-xs" />
         </Field>
 
         {msg && <div className="mt-3 font-mono text-[10px] text-ink/60">{msg}</div>}
         <button onClick={submit} disabled={busy} className="mt-4 w-full bg-ink px-4 py-3 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-          {busy ? "…" : "Bestellung anlegen"}
+          {busy ? "…" : "Create order"}
         </button>
       </div>
 
       <div className="border border-ink/20 bg-card p-4 font-mono text-xs text-ink/60">
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em]">Vorschau Toleranzen für {product?.reference ?? "—"}</div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em]">Tolerance preview for {product?.reference ?? "—"}</div>
         {product && tol ? (
           <ul className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
             {Object.entries(tol).filter(([k, v]) => k !== "product_id" && k !== "unit_dim" && k !== "updated_at" && v != null).map(([k, v]) => (
               <li key={k}><span className="text-ink/50">{k}:</span> <b>{String(v)}</b></li>
             ))}
           </ul>
-        ) : <div className="mt-2 text-ink/40">Keine Toleranzen in DB — Prüfer trägt Werte ein, ohne automatische Bewertung.</div>}
-        <div className="mt-4 text-ink/50">Ablauf: Bestellung → Warenannahme → Transport → Prüfung → <b>Freigabe (mit Verpackung + Versandart)</b> → Marking → Packing → Versand-Bestätigung.</div>
+        ) : <div className="mt-2 text-ink/40">No tolerances in DB — inspector enters values, no automatic evaluation.</div>}
+        <div className="mt-4 text-ink/50">Flow: Order → Goods receipt → Transport → Inspection → <b>Release (with packing + shipping mode)</b> → Marking → Packing → Shipment confirmation.</div>
       </div>
     </div>
   );
 }
 
-// ---------- QC-Planung (aus Lager) ----------
+// ---------- QC planning (aus Lager) ----------
 
 function BookingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-8 text-center font-mono text-sm text-ink/40">Keine Ware auf Lager, die auf QC-Planung wartet.</div>;
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-8 text-center font-mono text-sm text-ink/40">No stock waiting for QC planning.</div>;
   return (
     <div className="space-y-3">
       {jobs.map((j) => {
@@ -606,23 +606,23 @@ function BookingCard({ job, product, onDone }: { job: TestJob; product: Product 
         <div>
           {product && <ProductChip product={product} orderNumber={job.order_number} />}
           <div className="mt-1 font-mono text-[10px] text-ink/50">
-            {job.customer} ← {job.supplier} · {job.incoming_qty} Stk · Ort: <b>{job.storage_location ?? "?"}</b> · empfangen {job.received_by ?? "—"}
+            {job.customer} ← {job.supplier} · {job.incoming_qty} pcs · Location: <b>{job.storage_location ?? "?"}</b> · received {job.received_by ?? "—"}
           </div>
           <div className="mt-1 font-mono text-[10px] text-ink/50">
-            Prüfmengen I{job.sample_inner}/A{job.sample_outer}/B{job.sample_width}, allg. {job.sample_general}
+            Samples I{job.sample_inner}/A{job.sample_outer}/B{job.sample_width}, gen. {job.sample_general}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <label className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">
-            Termin
+            Date
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="ml-2 border-b border-ink/30 bg-transparent py-1 font-mono text-xs" />
           </label>
           <label className="flex items-center gap-1 font-mono text-xs">
             <input type="checkbox" checked={full} onChange={(e) => setFull(e.target.checked)} />
-            Full Check
+            Full check
           </label>
           <button onClick={submit} disabled={busy} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-            {busy ? "…" : "In QC buchen"}
+            {busy ? "…" : "Book to QC"}
           </button>
         </div>
       </div>
@@ -630,7 +630,7 @@ function BookingCard({ job, product, onDone }: { job: TestJob; product: Product 
   );
 }
 
-// ---------- Freigaben ----------
+// ---------- Releases ----------
 
 function DecisionsTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
   const pending = jobs.filter((j) => j.status === "awaiting_decision");
@@ -639,7 +639,7 @@ function DecisionsTab({ jobs, products, onDone }: { jobs: TestJob[]; products: P
   const pOf = (id: string) => products.find((p) => p.id === id);
 
   if (pending.length === 0) {
-    return <div className="border border-ink/20 bg-card p-8 text-center font-mono text-sm text-ink/40">Keine Freigaben ausstehend.</div>;
+    return <div className="border border-ink/20 bg-card p-8 text-center font-mono text-sm text-ink/40">No pending releases.</div>;
   }
 
   return (
@@ -664,7 +664,7 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
 
   async function decide(kind: "pass" | "retest" | "reject") {
     if (kind === "pass" && (!packingType.trim() || !country.trim())) {
-      setErr("Für die Freigabe sind Verpackungsart und Zielland Pflicht.");
+      setErr("Packing type and destination country are required for release.");
       return;
     }
     setErr(null);
@@ -690,8 +690,8 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
           <span className="font-mono text-[10px] text-ink/50">{job.customer} · {job.incoming_qty} Stk</span>
         </div>
         {fails > 0
-          ? <span className="rounded-sm bg-destructive/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-destructive">{fails} Prüfpunkt-Abweichung(en)</span>
-          : <span className="rounded-sm bg-ok/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ok">Ohne Auffälligkeit</span>}
+          ? <span className="rounded-sm bg-destructive/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-destructive">{fails} checkpoint deviation(s)</span>
+          : <span className="rounded-sm bg-ok/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ok">No issues</span>}
       </div>
       <ul className="divide-y divide-ink/10">
         {stations.map((s) => {
@@ -700,7 +700,7 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
             <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-2 text-sm">
               <div>
                 <div>{cp?.labelCn} · {cp?.label}</div>
-                <div className="font-mono text-[10px] text-ink/50">von {s.claimed_by ?? "—"} · {s.claimed_date ?? "—"}</div>
+                <div className="font-mono text-[10px] text-ink/50">by {s.claimed_by ?? "—"} · {s.claimed_date ?? "—"}</div>
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xs">{formatMeasurements(s.measurements)}</span>
@@ -715,49 +715,49 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
 
       <div className="grid gap-3 border-t border-ink/10 p-4 md:grid-cols-2">
         <label className="block">
-          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Anzahl schlechte Lager</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Number of defective bearings</div>
           <input type="number" min={0} value={defectCount} onChange={(e) => setDefectCount(parseInt(e.target.value || "0", 10))} className={inputCls} />
         </label>
         <label className="block">
-          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Anmerkung zu Rücksendung</div>
-          <input value={defectNote} onChange={(e) => setDefectNote(e.target.value)} className={inputCls} placeholder="z.B. Ausschuss aussortiert, Charge X…" />
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Return note</div>
+          <input value={defectNote} onChange={(e) => setDefectNote(e.target.value)} className={inputCls} placeholder="e.g. scrap removed, batch X…" />
         </label>
         <label className="md:col-span-2 block">
-          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Entscheidungs-Notiz</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Decision note</div>
           <input value={decisionNote} onChange={(e) => setDecisionNote(e.target.value)} className={inputCls} />
         </label>
       </div>
 
       <div className="border-t border-ink/10 bg-muted/40 p-4">
         <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/60">
-          Für Freigabe erforderlich · Verpackung &amp; Versand
+          Für Freigabe erforderlich · Packing &amp; Shipment
         </div>
         <div className="mt-2 grid gap-3 md:grid-cols-3">
           <label className="block">
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Verpackungsart *</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Packing type *</div>
             <select value={packingType} onChange={(e) => setPackingType(e.target.value)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
               {PACKING.map((p) => <option key={p}>{p}</option>)}
             </select>
           </label>
           <label className="block">
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Versandart *</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Shipping mode *</div>
             <select value={mode} onChange={(e) => setMode(e.target.value as any)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
-              <option value="sea">Seefracht</option>
-              <option value="air">Luftfracht</option>
+              <option value="sea">Sea freight</option>
+              <option value="air">Air freight</option>
             </select>
           </label>
           <label className="block">
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Zielland *</div>
-            <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="z.B. Deutschland" className={inputCls} />
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Destination country *</div>
+            <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g. Germany" className={inputCls} />
           </label>
         </div>
       </div>
 
       {err && <div className="border-t border-destructive/40 bg-destructive/10 px-4 py-2 font-mono text-[11px] text-destructive">{err}</div>}
       <div className="flex flex-wrap gap-2 border-t border-ink/10 p-4">
-        <button disabled={busy} onClick={() => decide("pass")} className="bg-ok px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85 disabled:opacity-30">Freigeben → Marking/Packing</button>
-        <button disabled={busy} onClick={() => decide("retest")} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85 disabled:opacity-30">Erneut prüfen</button>
-        <button disabled={busy} onClick={() => decide("reject")} className="bg-destructive px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-destructive-foreground hover:opacity-85 disabled:opacity-30">Komplett sperren</button>
+        <button disabled={busy} onClick={() => decide("pass")} className="bg-ok px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85 disabled:opacity-30">Release → Marking/Packing</button>
+        <button disabled={busy} onClick={() => decide("retest")} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85 disabled:opacity-30">Re-inspect</button>
+        <button disabled={busy} onClick={() => decide("reject")} className="bg-destructive px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-destructive-foreground hover:opacity-85 disabled:opacity-30">Block completely</button>
       </div>
     </div>
   );
@@ -767,14 +767,14 @@ function formatMeasurements(m: any): string {
   if (!m) return "—";
   if (Array.isArray(m?.values)) return m.values.join(", ");
   if (m?.value != null) return String(m.value);
-  if (m?.visual) return m.visual === "ok" ? "i.O." : "n.i.O.";
+  if (m?.visual) return m.visual === "ok" ? "OK" : "n.OK";
   return "—";
 }
 
-// ---------- Versand ----------
+// ---------- Shipment ----------
 
 function ShipmentTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-8 text-center font-mono text-sm text-ink/40">Keine Aufträge im Versand.</div>;
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-8 text-center font-mono text-sm text-ink/40">Keine Jobs im Shipment.</div>;
   return (
     <div className="space-y-3">
       {jobs.map((j) => {
@@ -802,17 +802,17 @@ function ShipmentCard({ job, product, onDone }: { job: TestJob; product: Product
         <div>
           {product && <ProductChip product={product} orderNumber={job.order_number} />}
           <div className="mt-1 font-mono text-[10px] text-ink/50">
-            {job.customer} · {job.incoming_qty} Stk · Status: <b>{job.shipment_status ?? "nicht angewiesen"}</b>
+            {job.customer} · {job.incoming_qty} pcs · Status: <b>{job.shipment_status ?? "not instructed"}</b>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <select value={mode} onChange={(e) => setMode(e.target.value as any)} className="border border-ink/25 bg-transparent px-2 py-2 font-mono text-xs">
-            <option value="sea">Seefracht</option>
-            <option value="air">Luftfracht</option>
+            <option value="sea">Sea freight</option>
+            <option value="air">Air freight</option>
           </select>
-          <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Zielland (z.B. Deutschland)" className="border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs" />
+          <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Destination country (e.g. Germany)" className="border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs" />
           <button onClick={submit} disabled={busy || !country.trim()} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-            {busy ? "…" : job.shipment_status ? "Aktualisieren" : "An Arbeiter"}
+            {busy ? "…" : job.shipment_status ? "Update" : "An Workers"}
           </button>
         </div>
       </div>

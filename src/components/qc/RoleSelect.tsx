@@ -3,19 +3,19 @@ export function RoleSelect({ onSelect }: { onSelect: (role: "office" | "worker",
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6">
         <div className="w-full border border-ink/20 bg-card p-8">
-          <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-ink/50">Prüfstrecke</div>
-          <h1 className="mt-1 font-display text-2xl">Rolle wählen</h1>
-          <p className="mt-2 font-mono text-xs text-ink/60">Kein Login — nur Rollenauswahl (Login kommt später).</p>
+          <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-ink/50">Inspection line</div>
+          <h1 className="mt-1 font-display text-2xl">Choose role</h1>
+          <p className="mt-2 font-mono text-xs text-ink/60">No login — just role selection (login later).</p>
 
           <RoleCard
-            title="Büro"
-            subtitle="Produkte, Toleranzen, Planung, Freigaben"
+            title="Office"
+            subtitle="Products, Toleranzen, Planung, Releases"
             onPick={(name) => onSelect("office", name)}
-            defaultName="Büro"
+            defaultName="Office"
           />
           <RoleCard
-            title="Arbeiter"
-            subtitle="Prüfstationen, Lasermarkierung, Verpackung"
+            title="Workers"
+            subtitle="Prüfstationen, Laser marking, Packing"
             onPick={(name) => onSelect("worker", name)}
             defaultName=""
           />
@@ -40,18 +40,18 @@ function RoleCard({
           e.preventDefault();
           const f = e.currentTarget as HTMLFormElement;
           const input = f.elements.namedItem("name") as HTMLInputElement;
-          const name = input.value.trim() || (title === "Büro" ? "Büro" : "Anonym");
+          const name = input.value.trim() || (title === "Office" ? "Office" : "Anonymous");
           onPick(name);
         }}
       >
         <input
           name="name"
           defaultValue={defaultName}
-          placeholder={title === "Büro" ? "Name (optional)" : "Dein Name"}
+          placeholder={title === "Office" ? "Name (optional)" : "Your name"}
           className="flex-1 border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-sm outline-none focus:border-ink"
         />
         <button className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
-          Weiter
+          Continue
         </button>
       </form>
     </div>

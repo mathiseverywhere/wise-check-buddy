@@ -121,37 +121,37 @@ export type CheckpointDef = {
 };
 
 export const CHECKPOINTS: CheckpointDef[] = [
-  { key: "inner_dia", label: "Innen-Ø Abweichung", labelCn: "内径偏差", unit: "μm",
+  { key: "inner_dia", label: "Inner Ø Deviation", labelCn: "内径偏差", unit: "μm",
     sampleField: "sample_inner", tolMinKey: "inner_dia_min", tolMaxKey: "inner_dia_max",
     nominalKey: "nominal_inner_dia", checklistKey: "check_inner_dia" },
-  { key: "outer_dia", label: "Außen-Ø Abweichung", labelCn: "外径偏差", unit: "μm",
+  { key: "outer_dia", label: "Outer Ø Deviation", labelCn: "外径偏差", unit: "μm",
     sampleField: "sample_outer", tolMinKey: "outer_dia_min", tolMaxKey: "outer_dia_max",
     nominalKey: "nominal_outer_dia", checklistKey: "check_outer_dia" },
-  { key: "width", label: "Breite Abweichung", labelCn: "高度偏差", unit: "μm",
+  { key: "width", label: "Width Deviation", labelCn: "高度偏差", unit: "μm",
     sampleField: "sample_width", tolMinKey: "width_min", tolMaxKey: "width_max",
     nominalKey: "nominal_width", checklistKey: "check_width" },
-  { key: "noise", label: "Geräusch", labelCn: "噪音", unit: "dB",
+  { key: "noise", label: "Noise", labelCn: "噪音", unit: "dB",
     sampleField: "sample_general", tolMaxKey: "noise_max", checklistKey: "check_noise" },
-  { key: "vibration_low", label: "Vibration niedrig", labelCn: "振动 低频", unit: "μm/g",
+  { key: "vibration_low", label: "Vibration low", labelCn: "振动 低频", unit: "μm/g",
     sampleField: "sample_general", tolMaxKey: "vibration_low_max", checklistKey: "check_vibration" },
-  { key: "vibration_mid", label: "Vibration mittel", labelCn: "振动 中频", unit: "μm/g",
+  { key: "vibration_mid", label: "Vibration mid", labelCn: "振动 中频", unit: "μm/g",
     sampleField: "sample_general", tolMaxKey: "vibration_mid_max", checklistKey: "check_vibration" },
-  { key: "vibration_high", label: "Vibration hoch", labelCn: "振动 高频", unit: "μm/g",
+  { key: "vibration_high", label: "Vibration high", labelCn: "振动 高频", unit: "μm/g",
     sampleField: "sample_general", tolMaxKey: "vibration_high_max", checklistKey: "check_vibration" },
-  { key: "radial_play", label: "Radialspiel", labelCn: "游隙", unit: "μm",
+  { key: "radial_play", label: "Radial play", labelCn: "游隙", unit: "μm",
     sampleField: "sample_general", tolMinKey: "radial_play_min", tolMaxKey: "radial_play_max",
     checklistKey: "check_radial_play" },
-  { key: "hardness_inner", label: "Härte Innenring", labelCn: "硬度 内圈", unit: "HRC",
+  { key: "hardness_inner", label: "Hardness inner ring", labelCn: "硬度 内圈", unit: "HRC",
     sampleField: "sample_general", tolMinKey: "hardness_inner_min", tolMaxKey: "hardness_inner_max",
     checklistKey: "check_hardness" },
-  { key: "hardness_outer", label: "Härte Außenring", labelCn: "硬度 外圈", unit: "HRC",
+  { key: "hardness_outer", label: "Hardness outer ring", labelCn: "硬度 外圈", unit: "HRC",
     sampleField: "sample_general", tolMinKey: "hardness_outer_min", tolMaxKey: "hardness_outer_max",
     checklistKey: "check_hardness" },
-  { key: "appearance", label: "Optik", labelCn: "外观", visual: true, checklistKey: "check_appearance" },
-  { key: "spin", label: "Lauf/Rotation", labelCn: "转动", visual: true, checklistKey: "check_spin" },
-  { key: "cage", label: "Käfig", labelCn: "保持器", visual: true, checklistKey: "check_cage" },
-  { key: "oil_hole", label: "Öl-Bohrung", labelCn: "油孔", visual: true, checklistKey: "check_oil_hole" },
-  { key: "chamfer", label: "Fase/Verrundung", labelCn: "倒角", visual: true, checklistKey: "check_chamfer" },
+  { key: "appearance", label: "Appearance", labelCn: "外观", visual: true, checklistKey: "check_appearance" },
+  { key: "spin", label: "Spin/Rotation", labelCn: "转动", visual: true, checklistKey: "check_spin" },
+  { key: "cage", label: "Cage", labelCn: "保持器", visual: true, checklistKey: "check_cage" },
+  { key: "oil_hole", label: "Oil hole", labelCn: "油孔", visual: true, checklistKey: "check_oil_hole" },
+  { key: "chamfer", label: "Chamfer", labelCn: "倒角", visual: true, checklistKey: "check_chamfer" },
 ];
 
 export function getCheckpoint(key: string): CheckpointDef | undefined {
@@ -330,7 +330,7 @@ export async function upsertTolerances(product_id: string, patch: Partial<Tolera
   if (error) throw error;
 }
 
-// Office creates the ORDER (starts at Warenannahme queue)
+// Office creates the ORDER (starts at Goods receipt queue)
 export async function createOrder(input: {
   order_number: string;
   product_id: string;
