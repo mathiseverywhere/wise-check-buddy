@@ -11,7 +11,7 @@ import { ArchiveTab } from "./ArchiveTab";
 const PACKING = ["Karton einzeln", "Blister", "Sammelkiste", "Kunststoffbeutel"];
 
 export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
-  const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "shipment">("overview");
+  const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "shipment" | "archive">("overview");
   const products = useProducts();
   const tol = useTolerancesMap();
   const jobs = useJobs();
