@@ -306,7 +306,7 @@ export function useReturns(): FetchState<JobReturn[]> {
   useEffect(() => {
     load();
     const ch = supabase
-      .channel("qc-returns")
+      .channel("qc-returns-" + Math.random().toString(36).slice(2))
       .on("postgres_changes", { event: "*", schema: "public", table: "job_returns" }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
