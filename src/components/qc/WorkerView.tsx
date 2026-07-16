@@ -8,6 +8,7 @@ import {
   type Product, type TestJob, type Station, type Tolerances, type CheckpointDef, type Checklist, type JobReturn,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
+import { useBi } from "@/lib/i18n";
 
 export function WorkerView({ workerName, onSwitchRole }: { workerName: string; onSwitchRole: () => void }) {
   const [tab, setTab] = useState<"receipt" | "transport" | "testing" | "returns" | "marking" | "packing" | "shipment">("testing");
