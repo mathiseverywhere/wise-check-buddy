@@ -55,14 +55,14 @@ export function WorkerView({ workerName, onSwitchRole }: { workerName: string; o
   );
 }
 
-// ---------- Transport (Lager → Prüfzentrum) ----------
+// ---------- Transport (Warehouse → Inspection center) ----------
 
 function TransportTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
   if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Nothing to transport.</div>;
   return (
     <div className="space-y-3">
       <div className="border border-ink/15 bg-muted px-4 py-2 font-mono text-[11px] text-ink/60">
-        Ware aus dem Lager holen, Inspection tag (Inspection-Tag) vergeben und ins Prüfzentrum bringen. Das Etikett erscheint anschließend im Inspectionsfenster.
+        Fetch goods from warehouse, assign an inspection tag and move them to the inspection center. The tag then shows in the inspection view.
       </div>
       {jobs.map((j) => {
         const p = products.find((x) => x.id === j.product_id);
@@ -346,7 +346,7 @@ function JobDetail({
             </li>
           );
         })}
-        {active.length === 0 && <li className="px-6 py-6 font-mono text-xs text-ink/50">Keine Prüfpunkte für diesen Auftrag ausgewählt.</li>}
+        {active.length === 0 && <li className="px-6 py-6 font-mono text-xs text-ink/50">No checkpoints selected for this job.</li>}
       </ul>
     </div>
   );
@@ -483,7 +483,7 @@ function StationForm({
               )}
             </div>
           )}
-          {overall === "unrated" && <div className="mt-1 font-mono text-[10px] text-ink/50">Keine Toleranz in DB → wird als "unrated" gespeichert.</div>}
+          {overall === "unrated" && <div className="mt-1 font-mono text-[10px] text-ink/50">No tolerance in DB → will be stored as "unrated".</div>}
         </div>
       )}
 
@@ -582,7 +582,7 @@ function PackingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
               <div className="mt-0.5 font-mono text-[10px] text-ink/50">Shipment: {j.shipment_mode === "air" ? "Air freight" : j.shipment_mode === "sea" ? "Sea freight" : "—"} → <b>{j.destination_country ?? "—"}</b></div>
             </div>
             <button onClick={async () => { await completePacking(j.id); onDone(); }} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
-              Verpackt → Shipment
+              Packed → Ship
             </button>
           </div>
         );

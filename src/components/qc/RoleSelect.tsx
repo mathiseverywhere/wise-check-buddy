@@ -9,13 +9,13 @@ export function RoleSelect({ onSelect }: { onSelect: (role: "office" | "worker",
 
           <RoleCard
             title="Office"
-            subtitle="Products, Toleranzen, Planung, Releases"
+            subtitle="Products, tolerances, planning, releases"
             onPick={(name) => onSelect("office", name)}
             defaultName="Office"
           />
           <RoleCard
             title="Workers"
-            subtitle="Prüfstationen, Laser marking, Packing"
+            subtitle="Inspection stations, laser marking, packing"
             onPick={(name) => onSelect("worker", name)}
             defaultName=""
           />

@@ -8,7 +8,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Inspection line — QC-System" },
-      { name: "description", content: "Qualitätskontrolle: Products, Toleranzen, Prüfaufträge, Laser marking, Packing." },
+      { name: "description", content: "Quality control: products, tolerances, inspection jobs, laser marking, packing." },
     ],
   }),
   component: HomePage,

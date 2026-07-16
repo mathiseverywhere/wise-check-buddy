@@ -8,7 +8,7 @@ import { ProductChip } from "./Shell";
 // Full-history timeline for completed (done) orders.
 // Every entry is derived from timestamps already stored on test_jobs / job_stations / job_returns.
 
-export function ArchiveeTab({ jobs, products }: { jobs: TestJob[]; products: Product[] }) {
+export function ArchiveTab({ jobs, products }: { jobs: TestJob[]; products: Product[] }) {
   const done = useMemo(
     () => jobs.filter((j) => j.status === "done").sort((a, b) => (b.shipped_at ?? b.packed_at ?? b.created_at).localeCompare(a.shipped_at ?? a.packed_at ?? a.created_at)),
     [jobs],
@@ -36,7 +36,7 @@ export function ArchiveeTab({ jobs, products }: { jobs: TestJob[]; products: Pro
     <div className="space-y-4">
       <div className="border border-ink/20 bg-card px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Archivee search</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Archive search</span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -130,7 +130,7 @@ function Timeline({
   if (job.received_at) {
     entries.push({
       ts: job.received_at,
-      phase: "Lager · Goods receipt",
+      phase: "Warehouse · Goods receipt",
       title: "Goods receipt booked",
       detail: job.storage_location ? `Storage location: ${job.storage_location}` : undefined,
       actor: job.received_by,

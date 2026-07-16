@@ -6,7 +6,7 @@ import {
   type Product, type Tolerances, type TestJob, type Checklist,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
-import { ArchiveeTab } from "./ArchiveeTab";
+import { ArchiveTab } from "./ArchiveTab";
 
 const PACKING = ["Single carton", "Blister", "Bulk crate", "Plastic bag"];
 
@@ -60,7 +60,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
       {tab === "book" && <BookingTab jobs={jobs.data.filter((j) => j.status === "in_stock")} products={products.data} onDone={jobs.refetch} />}
       {tab === "decisions" && <DecisionsTab jobs={jobs.data} products={products.data} onDone={jobs.refetch} />}
       {tab === "shipment" && <ShipmentTab jobs={jobs.data.filter((j) => j.status === "in_shipment")} products={products.data} onDone={jobs.refetch} />}
-      {tab === "archive" && <ArchiveeTab jobs={jobs.data} products={products.data} />}
+      {tab === "archive" && <ArchiveTab jobs={jobs.data} products={products.data} />}
     </AppShell>
   );
 }
@@ -572,7 +572,7 @@ function OrderTab({
   );
 }
 
-// ---------- QC planning (aus Lager) ----------
+// ---------- QC planning (from stock) ----------
 
 function BookingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
   if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-8 text-center font-mono text-sm text-ink/40">No stock waiting for QC planning.</div>;
@@ -730,7 +730,7 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
 
       <div className="border-t border-ink/10 bg-muted/40 p-4">
         <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/60">
-          Für Freigabe erforderlich · Packing &amp; Shipment
+          Required for release · Packing &amp; Shipment
         </div>
         <div className="mt-2 grid gap-3 md:grid-cols-3">
           <label className="block">
