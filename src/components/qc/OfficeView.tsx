@@ -13,6 +13,7 @@ const PACKING = ["Single carton", "Blister", "Bulk crate", "Plastic bag"];
 
 export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
   const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "shipment" | "archive">("overview");
+  const bi = useBi();
   const products = useProducts();
   const tol = useTolerancesMap();
   const jobs = useJobs();
@@ -38,20 +39,20 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
 
   return (
     <AppShell
-      title="Office console"
-      subtitle="Order · Warehouse · QC · Release · Shipment"
+      title={bi("Office console", "办公室控制台")}
+      subtitle={bi("Order · Warehouse · QC · Release · Shipment", "订单 · 仓库 · 质检 · 放行 · 出货")}
       role="office"
       onSwitchRole={onSwitchRole}
       tab={tab}
       setTab={(t) => setTab(t as typeof tab)}
       tabs={[
-        { id: "overview", label: "Overview" },
-        { id: "products", label: "Products", badge: products.data.length },
-        { id: "order", label: "Order" },
-        { id: "book", label: "QC planning", badge: counts.stock },
-        { id: "decisions", label: "Releases", badge: counts.decision },
-        { id: "shipment", label: "Shipment", badge: counts.shipment },
-        { id: "archive", label: "Archive", badge: counts.done },
+        { id: "overview", label: bi("Overview", "总览") },
+        { id: "products", label: bi("Products", "产品"), badge: products.data.length },
+        { id: "order", label: bi("Order", "订单") },
+        { id: "book", label: bi("QC planning", "质检计划"), badge: counts.stock },
+        { id: "decisions", label: bi("Releases", "放行"), badge: counts.decision },
+        { id: "shipment", label: bi("Shipment", "出货"), badge: counts.shipment },
+        { id: "archive", label: bi("Archive", "归档"), badge: counts.done },
       ]}
     >
       <JobLocator jobs={jobs.data} products={products.data} />
