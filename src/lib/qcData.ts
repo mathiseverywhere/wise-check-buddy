@@ -387,7 +387,20 @@ export async function receiveOrder(job_id: string, storage_location: string, wor
 export async function bookToQc(job_id: string, scheduled_date: string, instructions: "normal" | "full_check") {
   const { error } = await supabase
     .from("test_jobs")
-    .update({ status: "scheduled", scheduled_date, instructions })
+    .update({ status: "in_transport", scheduled_date, instructions })
+    .eq("id", job_id);
+  if (error) throw error;
+}
+
+export async function transportToInspection(job_id: string, inspection_tag: string, worker: string) {
+  const { error } = await supabase
+    .from("test_jobs")
+    .update({
+      status: "scheduled",
+      inspection_tag,
+      transported_by: worker,
+      transported_at: new Date().toISOString(),
+    })
     .eq("id", job_id);
   if (error) throw error;
 }
