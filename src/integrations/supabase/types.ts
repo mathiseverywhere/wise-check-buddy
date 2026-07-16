@@ -73,6 +73,47 @@ export type Database = {
           },
         ]
       }
+      job_returns: {
+        Row: {
+          created_at: string
+          done_at: string | null
+          done_by: string | null
+          id: string
+          job_id: string
+          note: string | null
+          quantity: number
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          job_id: string
+          note?: string | null
+          quantity?: number
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          job_id?: string
+          note?: string | null
+          quantity?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_returns_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "test_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_stations: {
         Row: {
           checkpoint_key: string
@@ -248,59 +289,101 @@ export type Database = {
       test_jobs: {
         Row: {
           created_at: string
+          customer: string | null
           decision: string | null
           decision_note: string | null
+          defect_count: number | null
+          defect_note: string | null
+          destination_country: string | null
           id: string
+          incoming_qty: number | null
           instructions: string
+          laser_text: string | null
           marked_at: string | null
           office_note: string | null
+          order_number: string | null
           packed_at: string | null
           product_id: string
           quantity_total: number
+          received_at: string | null
+          received_by: string | null
           sample_general: number
           sample_inner: number
           sample_outer: number
           sample_width: number
           scheduled_date: string
+          shipment_mode: string | null
+          shipment_status: string | null
+          shipped_at: string | null
           status: string
+          storage_location: string | null
+          supplier: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          customer?: string | null
           decision?: string | null
           decision_note?: string | null
+          defect_count?: number | null
+          defect_note?: string | null
+          destination_country?: string | null
           id?: string
+          incoming_qty?: number | null
           instructions?: string
+          laser_text?: string | null
           marked_at?: string | null
           office_note?: string | null
+          order_number?: string | null
           packed_at?: string | null
           product_id: string
           quantity_total?: number
+          received_at?: string | null
+          received_by?: string | null
           sample_general?: number
           sample_inner?: number
           sample_outer?: number
           sample_width?: number
           scheduled_date: string
+          shipment_mode?: string | null
+          shipment_status?: string | null
+          shipped_at?: string | null
           status?: string
+          storage_location?: string | null
+          supplier?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          customer?: string | null
           decision?: string | null
           decision_note?: string | null
+          defect_count?: number | null
+          defect_note?: string | null
+          destination_country?: string | null
           id?: string
+          incoming_qty?: number | null
           instructions?: string
+          laser_text?: string | null
           marked_at?: string | null
           office_note?: string | null
+          order_number?: string | null
           packed_at?: string | null
           product_id?: string
           quantity_total?: number
+          received_at?: string | null
+          received_by?: string | null
           sample_general?: number
           sample_inner?: number
           sample_outer?: number
           sample_width?: number
           scheduled_date?: string
+          shipment_mode?: string | null
+          shipment_status?: string | null
+          shipped_at?: string | null
           status?: string
+          storage_location?: string | null
+          supplier?: string | null
           updated_at?: string
         }
         Relationships: [

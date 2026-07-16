@@ -25,7 +25,7 @@ export function AppShell({
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-3">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-ink/50">
-              Prüfstrecke
+              Warenprozess
             </div>
             <div className="font-display text-lg leading-none">{title}</div>
             {subtitle && <div className="font-mono text-[10px] text-ink/50">{subtitle}</div>}
@@ -72,11 +72,14 @@ export function AppShell({
 
 export function StatusPill({ status }: { status: TestJob["status"] }) {
   const map: Record<TestJob["status"], { l: string; cls: string }> = {
+    awaiting_receipt: { l: "Warenannahme", cls: "bg-accent/25 text-ink" },
+    in_stock: { l: "Auf Lager", cls: "bg-ink/10 text-ink" },
     scheduled: { l: "Geplant", cls: "bg-muted text-ink/70" },
     in_testing: { l: "In Prüfung", cls: "bg-accent/25 text-ink" },
     awaiting_decision: { l: "Büro-Entscheid", cls: "bg-ink text-paper" },
     in_marking: { l: "Lasermarkierung", cls: "bg-ink/80 text-paper" },
     in_packing: { l: "Verpackung", cls: "bg-ok/20 text-ok" },
+    in_shipment: { l: "Versand", cls: "bg-accent/40 text-ink" },
     done: { l: "Fertig", cls: "bg-ok text-paper" },
     rejected: { l: "Gesperrt", cls: "bg-destructive text-destructive-foreground" },
   };
@@ -88,11 +91,11 @@ export function StatusPill({ status }: { status: TestJob["status"] }) {
   );
 }
 
-export function ProductChip({ product }: { product: Product }) {
+export function ProductChip({ product, orderNumber }: { product: Product; orderNumber?: string | null }) {
   return (
     <div className="inline-flex items-center gap-2 font-mono text-xs">
+      {orderNumber && <span className="rounded-sm bg-ink text-paper px-1.5 py-0.5">#{orderNumber}</span>}
       <span className="rounded-sm bg-ink/8 px-1.5 py-0.5">{product.reference}</span>
-      <span className="text-ink/70">{product.name}</span>
     </div>
   );
 }

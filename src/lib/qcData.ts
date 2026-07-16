@@ -39,8 +39,10 @@ export type Checklist = {
 };
 
 export type JobStatus =
+  | "awaiting_receipt" | "in_stock"
   | "scheduled" | "in_testing" | "awaiting_decision"
-  | "in_marking" | "in_packing" | "done" | "rejected";
+  | "in_marking" | "in_packing"
+  | "in_shipment" | "done" | "rejected";
 
 export type TestJob = {
   id: string;
@@ -56,6 +58,21 @@ export type TestJob = {
   marked_at: string | null;
   packed_at: string | null;
   created_at: string;
+  // extended
+  order_number: string | null;
+  customer: string | null;
+  supplier: string | null;
+  incoming_qty: number | null;
+  laser_text: string | null;
+  storage_location: string | null;
+  received_at: string | null;
+  received_by: string | null;
+  defect_count: number | null;
+  defect_note: string | null;
+  shipment_mode: "air" | "sea" | null;
+  destination_country: string | null;
+  shipped_at: string | null;
+  shipment_status: "prepared" | "shipped" | null;
 };
 
 export type Station = {
@@ -71,116 +88,101 @@ export type Station = {
   completed_at: string | null;
 };
 
+export type JobReturn = {
+  id: string;
+  job_id: string;
+  quantity: number;
+  note: string | null;
+  status: "open" | "done";
+  done_by: string | null;
+  done_at: string | null;
+  created_at: string;
+};
+
 // ---------- Checkpoint metadata ----------
+// NOTE: user requirement — for dim checkpoints, the operator enters the DEVIATION directly (μm),
+// not the raw mm measurement. So the tolerance min/max (μm) is compared directly against the input.
 
 export type CheckpointDef = {
   key: string;
   label: string;
   labelCn: string;
   unit?: string;
-  // multi-value using sample_* on job (which sample count applies)
   sampleField?: "sample_inner" | "sample_outer" | "sample_width" | "sample_general";
-  // tolerance columns on product_tolerances
   tolMinKey?: keyof Tolerances;
   tolMaxKey?: keyof Tolerances;
-  // nominal (for dim fields, measured = nominal + deviation/1000; entered as mm)
   nominalKey?: "nominal_inner_dia" | "nominal_outer_dia" | "nominal_width";
-  // Toleranz-Interpretation: 'deviation_um' → measured in mm, deviation compared in μm; 'direct' → measured compared directly
-  toleranceMode: "deviation_um" | "direct";
-  // visual only (OK/NIO buttons)
   visual?: boolean;
-  // checklist column that gates this checkpoint
   checklistKey: keyof Omit<Checklist, "job_id" | "extra_instructions">;
 };
 
 export const CHECKPOINTS: CheckpointDef[] = [
-  { key: "inner_dia", label: "Innen-Ø", labelCn: "内径", unit: "mm",
+  { key: "inner_dia", label: "Innen-Ø Abweichung", labelCn: "内径偏差", unit: "μm",
     sampleField: "sample_inner", tolMinKey: "inner_dia_min", tolMaxKey: "inner_dia_max",
-    nominalKey: "nominal_inner_dia", toleranceMode: "deviation_um", checklistKey: "check_inner_dia" },
-  { key: "outer_dia", label: "Außen-Ø", labelCn: "外径", unit: "mm",
+    nominalKey: "nominal_inner_dia", checklistKey: "check_inner_dia" },
+  { key: "outer_dia", label: "Außen-Ø Abweichung", labelCn: "外径偏差", unit: "μm",
     sampleField: "sample_outer", tolMinKey: "outer_dia_min", tolMaxKey: "outer_dia_max",
-    nominalKey: "nominal_outer_dia", toleranceMode: "deviation_um", checklistKey: "check_outer_dia" },
-  { key: "width", label: "Breite", labelCn: "高度/宽度", unit: "mm",
+    nominalKey: "nominal_outer_dia", checklistKey: "check_outer_dia" },
+  { key: "width", label: "Breite Abweichung", labelCn: "高度偏差", unit: "μm",
     sampleField: "sample_width", tolMinKey: "width_min", tolMaxKey: "width_max",
-    nominalKey: "nominal_width", toleranceMode: "deviation_um", checklistKey: "check_width" },
+    nominalKey: "nominal_width", checklistKey: "check_width" },
   { key: "noise", label: "Geräusch", labelCn: "噪音", unit: "dB",
-    sampleField: "sample_general", tolMaxKey: "noise_max", toleranceMode: "direct", checklistKey: "check_noise" },
+    sampleField: "sample_general", tolMaxKey: "noise_max", checklistKey: "check_noise" },
   { key: "vibration_low", label: "Vibration niedrig", labelCn: "振动 低频", unit: "μm/g",
-    sampleField: "sample_general", tolMaxKey: "vibration_low_max", toleranceMode: "direct", checklistKey: "check_vibration" },
+    sampleField: "sample_general", tolMaxKey: "vibration_low_max", checklistKey: "check_vibration" },
   { key: "vibration_mid", label: "Vibration mittel", labelCn: "振动 中频", unit: "μm/g",
-    sampleField: "sample_general", tolMaxKey: "vibration_mid_max", toleranceMode: "direct", checklistKey: "check_vibration" },
+    sampleField: "sample_general", tolMaxKey: "vibration_mid_max", checklistKey: "check_vibration" },
   { key: "vibration_high", label: "Vibration hoch", labelCn: "振动 高频", unit: "μm/g",
-    sampleField: "sample_general", tolMaxKey: "vibration_high_max", toleranceMode: "direct", checklistKey: "check_vibration" },
+    sampleField: "sample_general", tolMaxKey: "vibration_high_max", checklistKey: "check_vibration" },
   { key: "radial_play", label: "Radialspiel", labelCn: "游隙", unit: "μm",
     sampleField: "sample_general", tolMinKey: "radial_play_min", tolMaxKey: "radial_play_max",
-    toleranceMode: "direct", checklistKey: "check_radial_play" },
+    checklistKey: "check_radial_play" },
   { key: "hardness_inner", label: "Härte Innenring", labelCn: "硬度 内圈", unit: "HRC",
     sampleField: "sample_general", tolMinKey: "hardness_inner_min", tolMaxKey: "hardness_inner_max",
-    toleranceMode: "direct", checklistKey: "check_hardness" },
+    checklistKey: "check_hardness" },
   { key: "hardness_outer", label: "Härte Außenring", labelCn: "硬度 外圈", unit: "HRC",
     sampleField: "sample_general", tolMinKey: "hardness_outer_min", tolMaxKey: "hardness_outer_max",
-    toleranceMode: "direct", checklistKey: "check_hardness" },
-  { key: "appearance", label: "Optik", labelCn: "外观", visual: true,
-    toleranceMode: "direct", checklistKey: "check_appearance" },
-  { key: "spin", label: "Lauf/Rotation", labelCn: "转动", visual: true,
-    toleranceMode: "direct", checklistKey: "check_spin" },
-  { key: "cage", label: "Käfig", labelCn: "保持器", visual: true,
-    toleranceMode: "direct", checklistKey: "check_cage" },
-  { key: "oil_hole", label: "Öl-Bohrung", labelCn: "油孔", visual: true,
-    toleranceMode: "direct", checklistKey: "check_oil_hole" },
-  { key: "chamfer", label: "Fase/Verrundung", labelCn: "倒角", visual: true,
-    toleranceMode: "direct", checklistKey: "check_chamfer" },
+    checklistKey: "check_hardness" },
+  { key: "appearance", label: "Optik", labelCn: "外观", visual: true, checklistKey: "check_appearance" },
+  { key: "spin", label: "Lauf/Rotation", labelCn: "转动", visual: true, checklistKey: "check_spin" },
+  { key: "cage", label: "Käfig", labelCn: "保持器", visual: true, checklistKey: "check_cage" },
+  { key: "oil_hole", label: "Öl-Bohrung", labelCn: "油孔", visual: true, checklistKey: "check_oil_hole" },
+  { key: "chamfer", label: "Fase/Verrundung", labelCn: "倒角", visual: true, checklistKey: "check_chamfer" },
 ];
 
 export function getCheckpoint(key: string): CheckpointDef | undefined {
   return CHECKPOINTS.find((c) => c.key === key);
 }
 
-// Returns effective checkpoints for a job based on checklist AND (for numeric) whether tolerance exists
 export function activeCheckpoints(cl: Checklist | null, tol: Tolerances | null): CheckpointDef[] {
   if (!cl) return [];
   return CHECKPOINTS.filter((cp) => {
     if (!cl[cp.checklistKey]) return false;
-    // if numeric with tolerance keys: require at least one tolerance value present
     if (!cp.visual && (cp.tolMinKey || cp.tolMaxKey)) {
       const hasMin = cp.tolMinKey && tol?.[cp.tolMinKey] != null;
       const hasMax = cp.tolMaxKey && tol?.[cp.tolMaxKey] != null;
-      // if no tolerance defined in DB and this is a "vibration" split channel → hide (no data to test)
       if (cp.key.startsWith("vibration_") || cp.key.startsWith("hardness_")) {
         if (!hasMin && !hasMax) return false;
       }
-      // for inner/outer/width/noise/radial_play — still show even without tol (user asked: if tolerance present enable evaluation, otherwise still fillable). Show it.
     }
     return true;
   });
 }
 
-// Evaluate a numeric measured value against a checkpoint using tolerances (in mm if deviation_um, else direct unit).
-// Returns "ok" | "fail" | null (null = no tolerance / not applicable)
+// Direct comparison — input value is already in the unit stored in the tolerance columns.
 export function evaluateValue(
   raw: string,
   cp: CheckpointDef,
   tol: Tolerances | null,
-  product: Product | null,
 ): "ok" | "fail" | null {
   if (cp.visual) return null;
   const v = parseFloat(raw.replace(",", "."));
   if (Number.isNaN(v)) return null;
-  const minRaw = cp.tolMinKey ? tol?.[cp.tolMinKey] : null;
-  const maxRaw = cp.tolMaxKey ? tol?.[cp.tolMaxKey] : null;
-  if (minRaw == null && maxRaw == null) return null;
-
-  let value = v;
-  let min = minRaw as number | null;
-  let max = maxRaw as number | null;
-  if (cp.toleranceMode === "deviation_um" && cp.nominalKey && product) {
-    const nominal = product[cp.nominalKey];
-    if (nominal == null) return null;
-    // deviation in μm
-    value = (v - nominal) * 1000;
-  }
-  if (min != null && value < min) return "fail";
-  if (max != null && value > max) return "fail";
+  const min = cp.tolMinKey ? tol?.[cp.tolMinKey] : null;
+  const max = cp.tolMaxKey ? tol?.[cp.tolMaxKey] : null;
+  if (min == null && max == null) return null;
+  if (min != null && v < (min as number)) return "fail";
+  if (max != null && v > (max as number)) return "fail";
   return "ok";
 }
 
@@ -230,7 +232,7 @@ export function useJobs(): FetchState<TestJob[]> & { checklists: Record<string, 
   const load = useCallback(async () => {
     setLoading(true);
     const [{ data: jobs, error: e1 }, { data: cls, error: e2 }] = await Promise.all([
-      supabase.from("test_jobs").select("*").order("scheduled_date", { ascending: true }),
+      supabase.from("test_jobs").select("*").order("created_at", { ascending: false }),
       supabase.from("job_checklist").select("*"),
     ]);
     if (e1 || e2) setError((e1 ?? e2)!.message);
@@ -286,6 +288,28 @@ export function useStations(jobIds: string[]): FetchState<Record<string, Station
   return { data, loading, error, refetch: load };
 }
 
+export function useReturns(): FetchState<JobReturn[]> {
+  const [data, setData] = useState<JobReturn[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("job_returns").select("*").order("created_at", { ascending: false });
+    if (error) setError(error.message);
+    else setData((data as JobReturn[]) ?? []);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("qc-returns")
+      .on("postgres_changes", { event: "*", schema: "public", table: "job_returns" }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [load]);
+  return { data, loading, error, refetch: load };
+}
+
 // ---------- Mutations ----------
 
 export async function addProduct(p: Omit<Product, "id"> & { tolerances?: Partial<Tolerances> }) {
@@ -297,41 +321,45 @@ export async function addProduct(p: Omit<Product, "id"> & { tolerances?: Partial
   return data as Product;
 }
 
-export async function updateProduct(id: string, patch: Partial<Product>) {
-  const { error } = await supabase.from("products").update(patch).eq("id", id);
-  if (error) throw error;
-}
-
 export async function upsertTolerances(product_id: string, patch: Partial<Tolerances>) {
   const { error } = await supabase.from("product_tolerances").upsert({ product_id, ...patch });
   if (error) throw error;
 }
 
-export async function scheduleJob(input: {
+// Office creates the ORDER (starts at Warenannahme queue)
+export async function createOrder(input: {
+  order_number: string;
   product_id: string;
-  scheduled_date: string;
-  quantity_total: number;
+  customer: string;
+  supplier: string;
+  incoming_qty: number;
+  sample_general: number;   // controlled quantity — allgemeiner Test
   sample_inner: number;
   sample_outer: number;
   sample_width: number;
-  sample_general: number;
-  instructions: "normal" | "full_check";
-  office_note?: string;
+  laser_text?: string | null;
+  office_note?: string | null;
   checklist: Omit<Checklist, "job_id">;
 }) {
+  const today = new Date().toISOString().slice(0, 10);
   const { data: job, error } = await supabase
     .from("test_jobs")
     .insert({
       product_id: input.product_id,
-      scheduled_date: input.scheduled_date,
-      quantity_total: input.quantity_total,
+      scheduled_date: today,
+      quantity_total: input.incoming_qty,
       sample_inner: input.sample_inner,
       sample_outer: input.sample_outer,
       sample_width: input.sample_width,
       sample_general: input.sample_general,
-      instructions: input.instructions,
+      instructions: "normal",
       office_note: input.office_note ?? null,
-      status: "scheduled",
+      status: "awaiting_receipt",
+      order_number: input.order_number,
+      customer: input.customer,
+      supplier: input.supplier,
+      incoming_qty: input.incoming_qty,
+      laser_text: input.laser_text ?? null,
     })
     .select("*")
     .single();
@@ -340,8 +368,24 @@ export async function scheduleJob(input: {
   return job as TestJob;
 }
 
-export async function updateJob(id: string, patch: Partial<TestJob>) {
-  const { error } = await supabase.from("test_jobs").update(patch).eq("id", id);
+export async function receiveOrder(job_id: string, storage_location: string, worker: string) {
+  const { error } = await supabase
+    .from("test_jobs")
+    .update({
+      status: "in_stock",
+      storage_location,
+      received_at: new Date().toISOString(),
+      received_by: worker,
+    })
+    .eq("id", job_id);
+  if (error) throw error;
+}
+
+export async function bookToQc(job_id: string, scheduled_date: string, instructions: "normal" | "full_check") {
+  const { error } = await supabase
+    .from("test_jobs")
+    .update({ status: "scheduled", scheduled_date, instructions })
+    .eq("id", job_id);
   if (error) throw error;
 }
 
@@ -363,7 +407,6 @@ export async function claimStation(id: string, worker: string, date: string) {
     .update({ status: "claimed", claimed_by: worker, claimed_date: date })
     .eq("id", id).eq("status", "open");
   if (error) throw error;
-  // also mark job in_testing
 }
 
 export async function releaseStation(id: string) {
@@ -411,19 +454,43 @@ export async function decideJob(
   decision: "pass" | "retest" | "reject",
   note: string | undefined,
   productHasLaser: boolean,
+  defectCount: number,
+  defectNote: string | undefined,
 ) {
   let status: JobStatus;
   if (decision === "pass") status = productHasLaser ? "in_marking" : "in_packing";
   else if (decision === "reject") status = "rejected";
   else {
-    // retest → clear stations, back to in_testing
     await supabase.from("job_stations").delete().eq("job_id", job_id);
     status = "in_testing";
   }
   const { error } = await supabase
     .from("test_jobs")
-    .update({ decision, decision_note: note ?? null, status })
+    .update({
+      decision,
+      decision_note: note ?? null,
+      status,
+      defect_count: defectCount,
+      defect_note: defectNote ?? null,
+    })
     .eq("id", job_id);
+  if (error) throw error;
+
+  if (decision !== "retest" && defectCount > 0) {
+    await supabase.from("job_returns").insert({
+      job_id,
+      quantity: defectCount,
+      note: defectNote ?? null,
+      status: "open",
+    });
+  }
+}
+
+export async function completeReturn(id: string, worker: string) {
+  const { error } = await supabase
+    .from("job_returns")
+    .update({ status: "done", done_by: worker, done_at: new Date().toISOString() })
+    .eq("id", id);
   if (error) throw error;
 }
 
@@ -432,5 +499,21 @@ export async function completeMarking(job_id: string) {
 }
 
 export async function completePacking(job_id: string) {
-  await supabase.from("test_jobs").update({ status: "done", packed_at: new Date().toISOString() }).eq("id", job_id);
+  await supabase.from("test_jobs").update({ status: "in_shipment", packed_at: new Date().toISOString() }).eq("id", job_id);
+}
+
+export async function setShipment(job_id: string, mode: "air" | "sea", destination_country: string) {
+  const { error } = await supabase
+    .from("test_jobs")
+    .update({ shipment_mode: mode, destination_country, shipment_status: "prepared" })
+    .eq("id", job_id);
+  if (error) throw error;
+}
+
+export async function confirmShipment(job_id: string) {
+  const { error } = await supabase
+    .from("test_jobs")
+    .update({ shipment_status: "shipped", shipped_at: new Date().toISOString(), status: "done" })
+    .eq("id", job_id);
+  if (error) throw error;
 }
