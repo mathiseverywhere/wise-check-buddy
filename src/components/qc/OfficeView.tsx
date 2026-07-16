@@ -50,6 +50,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
         { id: "shipment", label: "Versand", badge: counts.shipment },
       ]}
     >
+      <JobLocator jobs={jobs.data} products={products.data} />
       {tab === "overview" && <Overview counts={counts} jobs={jobs.data} products={products.data} />}
       {tab === "products" && <ProductsTab products={products} tolerances={tol} />}
       {tab === "order" && <OrderTab products={products.data} tolerances={tol.data} onDone={jobs.refetch} />}
@@ -57,6 +58,78 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
       {tab === "decisions" && <DecisionsTab jobs={jobs.data} products={products.data} onDone={jobs.refetch} />}
       {tab === "shipment" && <ShipmentTab jobs={jobs.data.filter((j) => j.status === "in_shipment")} products={products.data} onDone={jobs.refetch} />}
     </AppShell>
+  );
+}
+
+// ---------- Job Locator (search) ----------
+
+const STATUS_LABEL: Record<string, string> = {
+  awaiting_receipt: "Warenannahme",
+  in_stock: "Auf Lager",
+  scheduled: "QC geplant",
+  in_testing: "In Prüfung",
+  awaiting_decision: "Wartet auf Freigabe",
+  in_marking: "Lasermarkierung",
+  in_packing: "Verpackung",
+  in_shipment: "Versand",
+  done: "Abgeschlossen",
+  rejected: "Gesperrt",
+};
+
+function JobLocator({ jobs, products }: { jobs: TestJob[]; products: Product[] }) {
+  const [q, setQ] = useState("");
+  const query = q.trim().toLowerCase();
+
+  const results = useMemo(() => {
+    if (!query) return [];
+    return jobs
+      .map((j) => {
+        const p = products.find((x) => x.id === j.product_id);
+        const ref = p?.reference ?? "";
+        const hay = `${ref} ${j.order_number ?? ""} ${j.customer ?? ""} ${j.supplier ?? ""}`.toLowerCase();
+        return hay.includes(query) ? { j, p } : null;
+      })
+      .filter(Boolean)
+      .slice(0, 8) as { j: TestJob; p: Product | undefined }[];
+  }, [query, jobs, products]);
+
+  return (
+    <div className="mb-4 border border-ink/20 bg-card">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Suche</span>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Referenz, Order-Nr., Kunde oder Lieferant …"
+          className="flex-1 border-b border-ink/25 bg-transparent py-1 font-mono text-sm outline-none focus:border-ink"
+        />
+        {q && <button onClick={() => setQ("")} className="font-mono text-[10px] text-ink/50 hover:text-ink">×</button>}
+      </div>
+      {query && (
+        <div className="divide-y divide-ink/10 border-t border-ink/10">
+          {results.length === 0 && (
+            <div className="px-4 py-3 font-mono text-xs text-ink/40">Keine Treffer.</div>
+          )}
+          {results.map(({ j, p }) => (
+            <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-2">
+              <div className="flex flex-wrap items-center gap-3">
+                {p && <ProductChip product={p} orderNumber={j.order_number} />}
+                <span className="font-mono text-[10px] text-ink/50">
+                  {j.customer ?? "—"} ← {j.supplier ?? "—"}
+                  {j.storage_location && ` · Ort: ${j.storage_location}`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">
+                  {STATUS_LABEL[j.status] ?? j.status}
+                </span>
+                <StatusPill status={j.status} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
