@@ -60,6 +60,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
       {tab === "book" && <BookingTab jobs={jobs.data.filter((j) => j.status === "in_stock")} products={products.data} onDone={jobs.refetch} />}
       {tab === "decisions" && <DecisionsTab jobs={jobs.data} products={products.data} onDone={jobs.refetch} />}
       {tab === "shipment" && <ShipmentTab jobs={jobs.data.filter((j) => j.status === "in_shipment")} products={products.data} onDone={jobs.refetch} />}
+      {tab === "archive" && <ArchiveTab jobs={jobs.data} products={products.data} />}
     </AppShell>
   );
 }
