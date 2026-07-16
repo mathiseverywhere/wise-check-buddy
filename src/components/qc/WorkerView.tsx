@@ -12,6 +12,7 @@ import { useBi } from "@/lib/i18n";
 
 export function WorkerView({ workerName, onSwitchRole }: { workerName: string; onSwitchRole: () => void }) {
   const [tab, setTab] = useState<"receipt" | "transport" | "testing" | "returns" | "marking" | "packing" | "shipment">("testing");
+  const bi = useBi();
   const products = useProducts();
   const tol = useTolerancesMap();
   const { data: jobs, checklists, refetch } = useJobs();
@@ -27,20 +28,20 @@ export function WorkerView({ workerName, onSwitchRole }: { workerName: string; o
 
   return (
     <AppShell
-      title="Workstation"
-      subtitle={`Inspector: ${workerName}`}
+      title={bi("Workstation", "工作站")}
+      subtitle={`${bi("Inspector", "检验员")}: ${workerName}`}
       role="worker"
       onSwitchRole={onSwitchRole}
       tab={tab}
       setTab={(t) => setTab(t as typeof tab)}
       tabs={[
-        { id: "receipt", label: "Goods receipt", badge: receipt.length },
-        { id: "transport", label: "Transport → Inspection", badge: transport.length },
-        { id: "testing", label: "Inspection", badge: testing.length },
-        { id: "returns", label: "Returns", badge: openReturns.length },
-        { id: "marking", label: "Laser marking", badge: marking.length },
-        { id: "packing", label: "Packing", badge: packing.length },
-        { id: "shipment", label: "Shipment", badge: shipment.length },
+        { id: "receipt", label: bi("Goods receipt", "收货"), badge: receipt.length },
+        { id: "transport", label: bi("Transport → Inspection", "运输 → 检验"), badge: transport.length },
+        { id: "testing", label: bi("Inspection", "检验"), badge: testing.length },
+        { id: "returns", label: bi("Returns", "退货"), badge: openReturns.length },
+        { id: "marking", label: bi("Laser marking", "激光打标"), badge: marking.length },
+        { id: "packing", label: bi("Packing", "包装"), badge: packing.length },
+        { id: "shipment", label: bi("Shipment", "出货"), badge: shipment.length },
       ]}
     >
       {tab === "receipt" && <ReceiptTab worker={workerName} jobs={receipt} products={products.data} onDone={refetch} />}
