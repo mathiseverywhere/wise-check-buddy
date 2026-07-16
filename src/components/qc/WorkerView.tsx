@@ -547,11 +547,13 @@ function MarkingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
       {jobs.map((j) => {
         const p = products.find((x) => x.id === j.product_id);
         const text = j.laser_text ?? p?.laser_text ?? p?.reference;
+        const pack = j.packing_type ?? p?.packing_type ?? "—";
         return (
           <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/20 bg-card p-4">
             <div>
-              {p && <ProductChip product={p} orderNumber={j.order_number} />}
+              {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
               <div className="mt-1 font-mono text-[10px] text-ink/50">Menge {j.incoming_qty ?? j.quantity_total} · Gravur: <b>{text}</b></div>
+              <div className="mt-0.5 font-mono text-[10px] text-ink/50">Nächste Schritte: {pack} · {j.shipment_mode === "air" ? "Luftfracht" : j.shipment_mode === "sea" ? "Seefracht" : "—"} → {j.destination_country ?? "—"}</div>
             </div>
             <button onClick={async () => { await completeMarking(j.id); onDone(); }} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
               Markierung abgeschlossen
@@ -571,11 +573,13 @@ function PackingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
     <div className="space-y-3">
       {jobs.map((j) => {
         const p = products.find((x) => x.id === j.product_id);
+        const pack = j.packing_type ?? p?.packing_type ?? "—";
         return (
           <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/20 bg-card p-4">
             <div>
-              {p && <ProductChip product={p} orderNumber={j.order_number} />}
-              <div className="mt-1 font-mono text-[10px] text-ink/50">Menge {j.incoming_qty ?? j.quantity_total} · Verpackung: <b>{p?.packing_type ?? "—"}</b></div>
+              {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
+              <div className="mt-1 font-mono text-[10px] text-ink/50">Menge {j.incoming_qty ?? j.quantity_total} · Verpackung: <b>{pack}</b></div>
+              <div className="mt-0.5 font-mono text-[10px] text-ink/50">Versand: {j.shipment_mode === "air" ? "Luftfracht" : j.shipment_mode === "sea" ? "Seefracht" : "—"} → <b>{j.destination_country ?? "—"}</b></div>
             </div>
             <button onClick={async () => { await completePacking(j.id); onDone(); }} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
               Verpackt → Versand
@@ -596,12 +600,13 @@ function ShipmentTab({ worker, jobs, products, onDone }: { worker: string; jobs:
     <div className="space-y-3">
       {jobs.map((j) => {
         const p = products.find((x) => x.id === j.product_id);
+        const pack = j.packing_type ?? p?.packing_type ?? "—";
         return (
           <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/25 bg-card p-4">
             <div>
-              {p && <ProductChip product={p} orderNumber={j.order_number} />}
+              {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
               <div className="mt-1 font-mono text-[10px] text-ink/50">
-                Menge {j.incoming_qty ?? j.quantity_total} · {j.shipment_mode === "air" ? "Luftfracht" : "Seefracht"} → <b>{j.destination_country}</b>
+                Menge {j.incoming_qty ?? j.quantity_total} · {j.shipment_mode === "air" ? "Luftfracht" : "Seefracht"} → <b>{j.destination_country}</b> · Verpackung: {pack}
               </div>
               <div className="mt-1 font-mono text-[10px] text-ink/50">Kunde: {j.customer}</div>
             </div>
