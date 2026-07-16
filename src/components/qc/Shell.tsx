@@ -92,11 +92,12 @@ export function StatusPill({ status }: { status: TestJob["status"] }) {
   );
 }
 
-export function ProductChip({ product, orderNumber }: { product: Product; orderNumber?: string | null }) {
+export function ProductChip({ product, orderNumber, inspectionTag }: { product: Product; orderNumber?: string | null; inspectionTag?: string | null }) {
   return (
     <div className="inline-flex items-center gap-2 font-mono text-xs">
       {orderNumber && <span className="rounded-sm bg-ink text-paper px-1.5 py-0.5">#{orderNumber}</span>}
       <span className="rounded-sm bg-ink/8 px-1.5 py-0.5">{product.reference}</span>
+      {inspectionTag && <span className="rounded-sm bg-accent text-ink px-1.5 py-0.5 font-semibold">🏷 {inspectionTag}</span>}
     </div>
   );
 }
