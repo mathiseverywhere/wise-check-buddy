@@ -72,6 +72,7 @@ export type TestJob = {
   transported_at: string | null;
   defect_count: number | null;
   defect_note: string | null;
+  packing_type: string | null;
   shipment_mode: "air" | "sea" | null;
   destination_country: string | null;
   shipped_at: string | null;
@@ -472,6 +473,7 @@ export async function decideJob(
   productHasLaser: boolean,
   defectCount: number,
   defectNote: string | undefined,
+  shipment?: { packing_type: string; shipment_mode: "air" | "sea"; destination_country: string },
 ) {
   let status: JobStatus;
   if (decision === "pass") status = productHasLaser ? "in_marking" : "in_packing";
@@ -480,16 +482,20 @@ export async function decideJob(
     await supabase.from("job_stations").delete().eq("job_id", job_id);
     status = "in_testing";
   }
-  const { error } = await supabase
-    .from("test_jobs")
-    .update({
-      decision,
-      decision_note: note ?? null,
-      status,
-      defect_count: defectCount,
-      defect_note: defectNote ?? null,
-    })
-    .eq("id", job_id);
+  const update: any = {
+    decision,
+    decision_note: note ?? null,
+    status,
+    defect_count: defectCount,
+    defect_note: defectNote ?? null,
+  };
+  if (decision === "pass" && shipment) {
+    update.packing_type = shipment.packing_type;
+    update.shipment_mode = shipment.shipment_mode;
+    update.destination_country = shipment.destination_country;
+    update.shipment_status = "prepared";
+  }
+  const { error } = await supabase.from("test_jobs").update(update).eq("id", job_id);
   if (error) throw error;
 
   if (decision !== "retest" && defectCount > 0) {

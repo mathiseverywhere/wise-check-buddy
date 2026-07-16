@@ -1,0 +1,1 @@
+ALTER TABLE public.test_jobs ADD COLUMN IF NOT EXISTS packing_type text;
