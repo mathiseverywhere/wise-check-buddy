@@ -149,36 +149,37 @@ function Overview({
   jobs: TestJob[];
   products: Product[];
 }) {
+  const bi = useBi();
   const [open, setOpen] = useState<string | null>("testing");
   const pOf = (id: string) => products.find((p) => p.id === id);
 
   const groups = [
-    { key: "receipt", label: "Goods receipt", jobs: jobs.filter((j) => j.status === "awaiting_receipt") },
-    { key: "stock", label: "In stock", jobs: jobs.filter((j) => j.status === "in_stock") },
-    { key: "transport", label: "Transport → Inspection", jobs: jobs.filter((j) => j.status === "in_transport") },
-    { key: "testing", label: "In inspection / Scheduled", jobs: jobs.filter((j) => j.status === "in_testing" || j.status === "scheduled") },
-    { key: "decision", label: "Awaiting release", jobs: jobs.filter((j) => j.status === "awaiting_decision") },
-    { key: "marking", label: "Laser marking", jobs: jobs.filter((j) => j.status === "in_marking") },
-    { key: "packing", label: "Packing", jobs: jobs.filter((j) => j.status === "in_packing") },
-    { key: "shipment", label: "Shipment", jobs: jobs.filter((j) => j.status === "in_shipment") },
-    { key: "done", label: "Completed", jobs: jobs.filter((j) => j.status === "done") },
-    { key: "rejected", label: "Blocked", jobs: jobs.filter((j) => j.status === "rejected") },
+    { key: "receipt", label: bi("Goods receipt", "收货"), jobs: jobs.filter((j) => j.status === "awaiting_receipt") },
+    { key: "stock", label: bi("In stock", "在库"), jobs: jobs.filter((j) => j.status === "in_stock") },
+    { key: "transport", label: bi("Transport → Inspection", "运输 → 检验"), jobs: jobs.filter((j) => j.status === "in_transport") },
+    { key: "testing", label: bi("In inspection / Scheduled", "检验中 / 已排程"), jobs: jobs.filter((j) => j.status === "in_testing" || j.status === "scheduled") },
+    { key: "decision", label: bi("Awaiting release", "待放行"), jobs: jobs.filter((j) => j.status === "awaiting_decision") },
+    { key: "marking", label: bi("Laser marking", "激光打标"), jobs: jobs.filter((j) => j.status === "in_marking") },
+    { key: "packing", label: bi("Packing", "包装"), jobs: jobs.filter((j) => j.status === "in_packing") },
+    { key: "shipment", label: bi("Shipment", "出货"), jobs: jobs.filter((j) => j.status === "in_shipment") },
+    { key: "done", label: bi("Completed", "已完成"), jobs: jobs.filter((j) => j.status === "done") },
+    { key: "rejected", label: bi("Blocked", "拒收"), jobs: jobs.filter((j) => j.status === "rejected") },
   ];
 
   return (
     <div className="space-y-6">
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
-        <StatCard label="Goods receipt" value={counts.receipt} />
-        <StatCard label="In stock" value={counts.stock} />
-        <StatCard label="Transport" value={counts.transport} tone="accent" />
-        <StatCard label="In testing" value={counts.testing} tone="accent" />
-        <StatCard label="Awaiting decision" value={counts.decision} tone="accent" />
-        <StatCard label="Open returns" value={counts.returns} tone="destructive" />
-        <StatCard label="Marking" value={counts.marking} />
-        <StatCard label="Packing" value={counts.packing} />
-        <StatCard label="Shipment" value={counts.shipment} />
-        <StatCard label="Done" value={counts.done} tone="ok" />
-        <StatCard label="Blocked" value={counts.rejected} tone="destructive" />
+        <StatCard label={bi("Goods receipt", "收货")} value={counts.receipt} />
+        <StatCard label={bi("In stock", "在库")} value={counts.stock} />
+        <StatCard label={bi("Transport", "运输")} value={counts.transport} tone="accent" />
+        <StatCard label={bi("In testing", "检验中")} value={counts.testing} tone="accent" />
+        <StatCard label={bi("Awaiting decision", "待决定")} value={counts.decision} tone="accent" />
+        <StatCard label={bi("Open returns", "未处理退货")} value={counts.returns} tone="destructive" />
+        <StatCard label={bi("Marking", "打标")} value={counts.marking} />
+        <StatCard label={bi("Packing", "包装")} value={counts.packing} />
+        <StatCard label={bi("Shipment", "出货")} value={counts.shipment} />
+        <StatCard label={bi("Done", "完成")} value={counts.done} tone="ok" />
+        <StatCard label={bi("Blocked", "拒收")} value={counts.rejected} tone="destructive" />
       </div>
 
       <div className="space-y-2">
@@ -193,7 +194,7 @@ function Overview({
             </button>
             {open === g.key && (
               <div className="divide-y divide-ink/10 border-t border-ink/10">
-                {g.jobs.length === 0 && <div className="px-4 py-3 font-mono text-xs text-ink/40">— leer —</div>}
+                {g.jobs.length === 0 && <div className="px-4 py-3 font-mono text-xs text-ink/40">— {bi("empty", "无")} —</div>}
                 {g.jobs.map((j) => {
                   const p = pOf(j.product_id);
                   return (
@@ -201,8 +202,8 @@ function Overview({
                       <div className="flex flex-wrap items-center gap-3">
                         {p && <ProductChip product={p} orderNumber={j.order_number} />}
                         <span className="font-mono text-[10px] text-ink/50">
-                          {j.customer ?? "—"} ← {j.supplier ?? "—"} · {j.incoming_qty ?? j.quantity_total} pcs
-                          {j.storage_location && ` · Location: ${j.storage_location}`}
+                          {j.customer ?? "—"} ← {j.supplier ?? "—"} · {j.incoming_qty ?? j.quantity_total} {bi("pcs", "件")}
+                          {j.storage_location && ` · ${bi("Location", "位置")}: ${j.storage_location}`}
                         </span>
                       </div>
                       <StatusPill status={j.status} />
