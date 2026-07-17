@@ -57,53 +57,127 @@ export function WorkerView({ workerName, onSwitchRole }: { workerName: string; o
   );
 }
 
-// ---------- Transport (Warehouse → Inspection center) ----------
+// ---------- Batch helpers ----------
 
-function TransportTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Nothing to transport.</div>;
+function groupByReference(jobs: TestJob[], products: Product[]): { ref: string; product: Product | undefined; items: TestJob[] }[] {
+  const map = new Map<string, TestJob[]>();
+  for (const j of jobs) {
+    const p = products.find((x) => x.id === j.product_id);
+    const ref = p?.reference ?? "—";
+    (map.get(ref) ?? map.set(ref, []).get(ref)!).push(j);
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([ref, items]) => ({ ref, product: products.find((x) => x.reference === ref), items }));
+}
+
+function BatchGroupHeader({
+  product, ref, items, selected, onToggleAll, children,
+}: {
+  product: Product | undefined;
+  ref: string;
+  items: TestJob[];
+  selected: Set<string>;
+  onToggleAll: () => void;
+  children?: React.ReactNode;
+}) {
+  const allSelected = items.every((j) => selected.has(j.id));
+  const anySelected = items.some((j) => selected.has(j.id));
   return (
-    <div className="space-y-3">
-      <div className="border border-ink/15 bg-muted px-4 py-2 font-mono text-[11px] text-ink/60">
-        Fetch goods from warehouse, assign an inspection tag and move them to the inspection center. The tag then shows in the inspection view.
-      </div>
-      {jobs.map((j) => {
-        const p = products.find((x) => x.id === j.product_id);
-        return <TransportCard key={j.id} worker={worker} job={j} product={p} onDone={onDone} />;
-      })}
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/15 bg-muted/60 px-4 py-2">
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          ref={(el) => { if (el) el.indeterminate = !allSelected && anySelected; }}
+          onChange={onToggleAll}
+          className="h-4 w-4 accent-ink"
+        />
+        <span className="font-mono text-sm font-semibold">{ref}</span>
+        <span className="font-mono text-[10px] text-ink/50">{product?.name ?? ""}</span>
+        <span className="ml-2 font-mono text-[10px] text-ink/50">· {items.length} orders</span>
+      </label>
+      {children}
     </div>
   );
 }
 
-function TransportCard({ worker, job, product, onDone }: { worker: string; job: TestJob; product: Product | undefined; onDone: () => void }) {
-  const suggested = `T-${(job.order_number ?? job.id.slice(0, 4)).toString().slice(-6)}-${new Date().toISOString().slice(5,10).replace("-","")}`;
-  const [tag, setTag] = useState(suggested);
+// ---------- Transport (Warehouse → Inspection center) ----------
+
+function TransportTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [tagPrefix, setTagPrefix] = useState("");
   const [busy, setBusy] = useState(false);
-  async function submit() {
-    if (!tag.trim()) return;
+  const groups = useMemo(() => groupByReference(jobs, products), [jobs, products]);
+
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Nothing to transport.</div>;
+
+  const toggle = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleGroup = (items: TestJob[]) => setSelected((s) => {
+    const n = new Set(s);
+    const all = items.every((j) => n.has(j.id));
+    for (const j of items) { if (all) n.delete(j.id); else n.add(j.id); }
+    return n;
+  });
+
+  async function submitBatch() {
+    const chosen = jobs.filter((j) => selected.has(j.id));
+    if (chosen.length === 0) return;
+    const stamp = new Date().toISOString().slice(5,10).replace("-","");
+    const base = tagPrefix.trim() || "T";
     setBusy(true);
-    try { await transportToInspection(job.id, tag.trim(), worker); onDone(); } finally { setBusy(false); }
+    try {
+      for (let i = 0; i < chosen.length; i++) {
+        const j = chosen[i];
+        const suffix = (j.order_number ?? j.id.slice(0,4)).toString().slice(-6);
+        const tag = `${base}-${suffix}-${stamp}${chosen.length > 1 ? `-${i+1}` : ""}`;
+        await transportToInspection(j.id, tag, worker);
+      }
+      setSelected(new Set());
+      onDone();
+    } finally { setBusy(false); }
   }
+
   return (
-    <div className="border border-ink/25 bg-card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          {product && <ProductChip product={product} orderNumber={job.order_number} />}
-          <div className="mt-1 font-mono text-[10px] text-ink/50">
-            Storage location: <b>{job.storage_location ?? "—"}</b> · {job.incoming_qty ?? job.quantity_total} pcs · {job.customer} ← {job.supplier}
-          </div>
-          {job.instructions === "full_check" && (
-            <span className="mt-1 inline-block tape-stripes px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-paper">Full check</span>
-          )}
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-ink/15 bg-muted px-4 py-2">
+        <div className="font-mono text-[11px] text-ink/60">
+          Select one or more orders (same reference recommended), assign an inspection tag and move them to inspection.
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Inspection tag
-            <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g. T-1234-1116" className="ml-2 border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs w-56 normal-case tracking-normal" />
+        <div className="flex items-center gap-2">
+          <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Tag prefix
+            <input value={tagPrefix} onChange={(e) => setTagPrefix(e.target.value)} placeholder="T" className="ml-2 border-b border-ink/30 bg-transparent px-1 py-1 font-mono text-xs w-24 normal-case tracking-normal" />
           </label>
-          <button onClick={submit} disabled={busy || !tag.trim()} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-            {busy ? "…" : "Tagged → to inspection"}
+          <button onClick={submitBatch} disabled={busy || selected.size === 0} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
+            {busy ? "…" : `Tag ${selected.size} → to inspection`}
           </button>
         </div>
       </div>
+      {groups.map(({ ref, product, items }) => (
+        <div key={ref} className="border border-ink/25 bg-card">
+          <BatchGroupHeader product={product} ref={ref} items={items} selected={selected} onToggleAll={() => toggleGroup(items)} />
+          <ul className="divide-y divide-ink/10">
+            {items.map((j) => {
+              const p = products.find((x) => x.id === j.product_id);
+              const checked = selected.has(j.id);
+              return (
+                <li key={j.id} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${checked ? "bg-accent/10" : ""}`}>
+                  <input type="checkbox" checked={checked} onChange={() => toggle(j.id)} className="h-4 w-4 accent-ink" />
+                  <div className="flex-1">
+                    {p && <ProductChip product={p} orderNumber={j.order_number} />}
+                    <div className="mt-1 font-mono text-[10px] text-ink/50">
+                      Location: <b>{j.storage_location ?? "—"}</b> · {j.incoming_qty ?? j.quantity_total} pcs · {j.customer} ← {j.supplier}
+                    </div>
+                  </div>
+                  {j.instructions === "full_check" && (
+                    <span className="tape-stripes px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-paper">Full check</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
@@ -111,41 +185,66 @@ function TransportCard({ worker, job, product, onDone }: { worker: string; job: 
 // ---------- Goods receipt ----------
 
 function ReceiptTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Orders zur Annahme.</div>;
-  return (
-    <div className="space-y-3">
-      {jobs.map((j) => {
-        const p = products.find((x) => x.id === j.product_id);
-        return <ReceiptCard key={j.id} worker={worker} job={j} product={p} onDone={onDone} />;
-      })}
-    </div>
-  );
-}
-
-function ReceiptCard({ worker, job, product, onDone }: { worker: string; job: TestJob; product: Product | undefined; onDone: () => void }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loc, setLoc] = useState("");
   const [busy, setBusy] = useState(false);
-  async function submit() {
-    if (!loc.trim()) return;
+  const groups = useMemo(() => groupByReference(jobs, products), [jobs, products]);
+
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">No orders to receive.</div>;
+
+  const toggle = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleGroup = (items: TestJob[]) => setSelected((s) => {
+    const n = new Set(s);
+    const all = items.every((j) => n.has(j.id));
+    for (const j of items) { if (all) n.delete(j.id); else n.add(j.id); }
+    return n;
+  });
+
+  async function submitBatch() {
+    if (!loc.trim() || selected.size === 0) return;
     setBusy(true);
-    try { await receiveOrder(job.id, loc.trim(), worker); onDone(); } finally { setBusy(false); }
+    try {
+      for (const id of selected) await receiveOrder(id, loc.trim(), worker);
+      setSelected(new Set());
+      onDone();
+    } finally { setBusy(false); }
   }
+
   return (
-    <div className="border border-ink/25 bg-card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          {product && <ProductChip product={product} orderNumber={job.order_number} />}
-          <div className="mt-1 font-mono text-[10px] text-ink/50">
-            Customer: <b>{job.customer}</b> · Supplier: <b>{job.supplier}</b> · {job.incoming_qty} pcs
-          </div>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-ink/15 bg-muted px-4 py-2">
+        <div className="font-mono text-[11px] text-ink/60">
+          Select orders of the same reference and book them to a common storage location in one step.
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <input value={loc} onChange={(e) => setLoc(e.target.value)} placeholder="Storage location (z.B. Regal A-12)" className="border-b border-ink/30 bg-transparent px-1 py-2 font-mono text-xs w-56" />
-          <button onClick={submit} disabled={busy || !loc.trim()} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
-            {busy ? "…" : "Received → to stock"}
+        <div className="flex items-center gap-2">
+          <input value={loc} onChange={(e) => setLoc(e.target.value)} placeholder="Storage location (e.g. Rack A-12)" className="border-b border-ink/30 bg-transparent px-1 py-1 font-mono text-xs w-56" />
+          <button onClick={submitBatch} disabled={busy || !loc.trim() || selected.size === 0} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
+            {busy ? "…" : `Receive ${selected.size} → stock`}
           </button>
         </div>
       </div>
+      {groups.map(({ ref, product, items }) => (
+        <div key={ref} className="border border-ink/25 bg-card">
+          <BatchGroupHeader product={product} ref={ref} items={items} selected={selected} onToggleAll={() => toggleGroup(items)} />
+          <ul className="divide-y divide-ink/10">
+            {items.map((j) => {
+              const p = products.find((x) => x.id === j.product_id);
+              const checked = selected.has(j.id);
+              return (
+                <li key={j.id} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${checked ? "bg-accent/10" : ""}`}>
+                  <input type="checkbox" checked={checked} onChange={() => toggle(j.id)} className="h-4 w-4 accent-ink" />
+                  <div className="flex-1">
+                    {p && <ProductChip product={p} orderNumber={j.order_number} />}
+                    <div className="mt-1 font-mono text-[10px] text-ink/50">
+                      Customer: <b>{j.customer}</b> · Supplier: <b>{j.supplier}</b> · {j.incoming_qty} pcs
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
