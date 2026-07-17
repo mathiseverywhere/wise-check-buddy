@@ -743,27 +743,61 @@ function PackingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
 
 function ShipmentTab({ worker, jobs, products, onDone }: { worker: string; jobs: TestJob[]; products: Product[]; onDone: () => void }) {
   void worker;
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Jobs im Shipment vorbereitet.</div>;
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const groups = useMemo(() => groupByReference(jobs, products), [jobs, products]);
+
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">No jobs prepared for shipment.</div>;
+
+  const toggle = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleGroup = (items: TestJob[]) => setSelected((s) => {
+    const n = new Set(s);
+    const all = items.every((j) => n.has(j.id));
+    for (const j of items) { if (all) n.delete(j.id); else n.add(j.id); }
+    return n;
+  });
+  async function shipBatch() {
+    if (selected.size === 0) return;
+    setBusy(true);
+    try {
+      for (const id of selected) await confirmShipment(id);
+      setSelected(new Set());
+      onDone();
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="space-y-3">
-      {jobs.map((j) => {
-        const p = products.find((x) => x.id === j.product_id);
-        const pack = j.packing_type ?? p?.packing_type ?? "—";
-        return (
-          <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/25 bg-card p-4">
-            <div>
-              {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
-              <div className="mt-1 font-mono text-[10px] text-ink/50">
-                Qty {j.incoming_qty ?? j.quantity_total} · {j.shipment_mode === "air" ? "Air freight" : "Sea freight"} → <b>{j.destination_country}</b> · Packing: {pack}
-              </div>
-              <div className="mt-1 font-mono text-[10px] text-ink/50">Customer: {j.customer}</div>
-            </div>
-            <button onClick={async () => { await confirmShipment(j.id); onDone(); }} className="bg-ok px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:opacity-85">
-              Shipped — done
-            </button>
-          </div>
-        );
-      })}
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-ink/15 bg-muted px-4 py-2">
+        <div className="font-mono text-[11px] text-ink/60">Select orders of the same reference and confirm shipment in a single step.</div>
+        <button onClick={shipBatch} disabled={busy || selected.size === 0} className="bg-ok px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:opacity-85">
+          {busy ? "…" : `Ship ${selected.size} — done`}
+        </button>
+      </div>
+      {groups.map(({ ref, product, items }) => (
+        <div key={ref} className="border border-ink/25 bg-card">
+          <BatchGroupHeader product={product} ref={ref} items={items} selected={selected} onToggleAll={() => toggleGroup(items)} />
+          <ul className="divide-y divide-ink/10">
+            {items.map((j) => {
+              const p = products.find((x) => x.id === j.product_id);
+              const pack = j.packing_type ?? p?.packing_type ?? "—";
+              const checked = selected.has(j.id);
+              return (
+                <li key={j.id} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${checked ? "bg-accent/10" : ""}`}>
+                  <input type="checkbox" checked={checked} onChange={() => toggle(j.id)} className="h-4 w-4 accent-ink" />
+                  <div className="flex-1">
+                    {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
+                    <div className="mt-1 font-mono text-[10px] text-ink/50">
+                      Qty {j.incoming_qty ?? j.quantity_total} · {j.shipment_mode === "air" ? "Air freight" : "Sea freight"} → <b>{j.destination_country}</b> · Packing: {pack}
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] text-ink/50">Customer: {j.customer}</div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
