@@ -542,6 +542,18 @@ function OrderTab({
           <input value={laserText} onChange={(e) => setLaserText(e.target.value)} className={inputCls} placeholder={product?.laser_text ?? "—"} />
         </Field>
 
+        <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Shipment (needed for later pallet grouping)</div>
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          <Field label="Shipping mode *">
+            <select value={mode} onChange={(e) => setMode(e.target.value as any)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
+              <option value="sea">Sea freight 海运</option>
+              <option value="air">Air freight 空运</option>
+            </select>
+          </Field>
+          <Field label="Destination country *"><input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g. Germany" className={inputCls} /></Field>
+        </div>
+
+
         <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">What should be inspected?</div>
         <div className="mt-2 grid grid-cols-2 gap-1">
           {checkboxes.map((cb) => {
