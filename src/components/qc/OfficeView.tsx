@@ -451,6 +451,8 @@ function OrderTab({
   const [sWidth, setSWidth] = useState(5);
   const [laserText, setLaserText] = useState("");
   const [note, setNote] = useState("");
+  const [mode, setMode] = useState<"air" | "sea">("sea");
+  const [country, setCountry] = useState("");
   const [cl, setCl] = useState<Omit<Checklist, "job_id">>({
     check_inner_dia: true, check_outer_dia: true, check_width: true,
     check_noise: false, check_vibration: false, check_radial_play: false,
