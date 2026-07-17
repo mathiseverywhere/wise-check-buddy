@@ -491,7 +491,7 @@ export async function decideJob(
   productHasLaser: boolean,
   defectCount: number,
   defectNote: string | undefined,
-  shipment?: { packing_type: string; shipment_mode: "air" | "sea"; destination_country: string },
+  packing?: { packing_type: string },
 ) {
   let status: JobStatus;
   if (decision === "pass") status = productHasLaser ? "in_marking" : "in_packing";
@@ -507,10 +507,8 @@ export async function decideJob(
     defect_count: defectCount,
     defect_note: defectNote ?? null,
   };
-  if (decision === "pass" && shipment) {
-    update.packing_type = shipment.packing_type;
-    update.shipment_mode = shipment.shipment_mode;
-    update.destination_country = shipment.destination_country;
+  if (decision === "pass" && packing) {
+    update.packing_type = packing.packing_type;
     update.shipment_status = "prepared";
   }
   const { error } = await supabase.from("test_jobs").update(update).eq("id", job_id);
@@ -525,6 +523,79 @@ export async function decideJob(
     });
   }
 }
+
+// ---------- Pallets ----------
+
+export function usePallets(): FetchState<Pallet[]> {
+  const [data, setData] = useState<Pallet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("pallets").select("*").order("created_at", { ascending: false });
+    if (error) setError(error.message);
+    else setData((data as Pallet[]) ?? []);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("qc-pallets-" + Math.random().toString(36).slice(2))
+      .on("postgres_changes", { event: "*", schema: "public", table: "pallets" }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [load]);
+  return { data, loading, error, refetch: load };
+}
+
+export async function createPallet(input: {
+  name: string;
+  carton_size: string;
+  shipment_mode: "air" | "sea";
+  destination_country: string;
+  note?: string | null;
+  job_ids: string[];
+}) {
+  const { data, error } = await supabase
+    .from("pallets")
+    .insert({
+      name: input.name,
+      carton_size: input.carton_size,
+      shipment_mode: input.shipment_mode,
+      destination_country: input.destination_country,
+      note: input.note ?? null,
+      status: "assembling",
+    })
+    .select("*").single();
+  if (error) throw error;
+  if (input.job_ids.length > 0) {
+    await supabase.from("test_jobs").update({ pallet_id: data.id }).in("id", input.job_ids);
+  }
+  return data as Pallet;
+}
+
+export async function assignJobsToPallet(pallet_id: string, job_ids: string[]) {
+  if (job_ids.length === 0) return;
+  const { error } = await supabase.from("test_jobs").update({ pallet_id }).in("id", job_ids);
+  if (error) throw error;
+}
+
+export async function removeJobFromPallet(job_id: string) {
+  const { error } = await supabase.from("test_jobs").update({ pallet_id: null }).eq("id", job_id);
+  if (error) throw error;
+}
+
+export async function markPalletReadyToPack(pallet_id: string) {
+  const { error } = await supabase.from("pallets").update({ status: "ready_to_pack" }).eq("id", pallet_id);
+  if (error) throw error;
+}
+
+export async function completePalletPacking(pallet_id: string, job_ids: string[]) {
+  const now = new Date().toISOString();
+  await supabase.from("test_jobs").update({ status: "in_shipment", packed_at: now }).in("id", job_ids);
+  await supabase.from("pallets").update({ status: "packed", packed_at: now }).eq("id", pallet_id);
+}
+
 
 export async function completeReturn(id: string, worker: string) {
   const { error } = await supabase
