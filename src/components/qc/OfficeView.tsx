@@ -88,33 +88,65 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function JobLocator({ jobs, products }: { jobs: TestJob[]; products: Product[] }) {
-  const [q, setQ] = useState("");
-  const query = q.trim().toLowerCase();
+  const [ref, setRef] = useState("");
+  const [ord, setOrd] = useState("");
+  const [free, setFree] = useState("");
+  const refQ = ref.trim().toLowerCase();
+  const ordQ = ord.trim().toLowerCase();
+  const freeQ = free.trim().toLowerCase();
+  const anyQuery = refQ || ordQ || freeQ;
 
   const results = useMemo(() => {
-    if (!query) return [];
+    if (!anyQuery) return [];
     return jobs
       .map((j) => {
         const p = products.find((x) => x.id === j.product_id);
-        const ref = p?.reference ?? "";
-        const hay = `${ref} ${j.order_number ?? ""} ${j.customer ?? ""} ${j.supplier ?? ""}`.toLowerCase();
-        return hay.includes(query) ? { j, p } : null;
+        const reference = (p?.reference ?? "").toLowerCase();
+        const order = (j.order_number ?? "").toLowerCase();
+        const extra = `${j.customer ?? ""} ${j.supplier ?? ""}`.toLowerCase();
+        if (refQ && !reference.includes(refQ)) return null;
+        if (ordQ && !order.includes(ordQ)) return null;
+        if (freeQ && !(reference.includes(freeQ) || order.includes(freeQ) || extra.includes(freeQ))) return null;
+        return { j, p };
       })
       .filter(Boolean)
-      .slice(0, 8) as { j: TestJob; p: Product | undefined }[];
-  }, [query, jobs, products]);
+      .slice(0, 12) as { j: TestJob; p: Product | undefined }[];
+  }, [refQ, ordQ, freeQ, anyQuery, jobs, products]);
+
+  const clearAll = () => { setRef(""); setOrd(""); setFree(""); };
 
   return (
     <div className="mb-4 border border-ink/20 bg-card">
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3">
         <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Search</span>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Reference, Order no., Customer oder Supplier …"
-          className="flex-1 border-b border-ink/25 bg-transparent py-1 font-mono text-sm outline-none focus:border-ink"
-        />
-        {q && <button onClick={() => setQ("")} className="font-mono text-[10px] text-ink/50 hover:text-ink">×</button>}
+        <label className="flex flex-1 min-w-[140px] items-center gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/40">Ref</span>
+          <input
+            value={ref}
+            onChange={(e) => setRef(e.target.value)}
+            placeholder="e.g. 6205"
+            className="flex-1 border-b border-ink/25 bg-transparent py-1 font-mono text-sm outline-none focus:border-ink"
+          />
+        </label>
+        <label className="flex flex-1 min-w-[140px] items-center gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/40">Order</span>
+          <input
+            value={ord}
+            onChange={(e) => setOrd(e.target.value)}
+            placeholder="e.g. PO-1234"
+            className="flex-1 border-b border-ink/25 bg-transparent py-1 font-mono text-sm outline-none focus:border-ink"
+          />
+        </label>
+        <label className="flex flex-1 min-w-[140px] items-center gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/40">Any</span>
+          <input
+            value={free}
+            onChange={(e) => setFree(e.target.value)}
+            placeholder="Customer / Supplier …"
+            className="flex-1 border-b border-ink/25 bg-transparent py-1 font-mono text-sm outline-none focus:border-ink"
+          />
+        </label>
+        {anyQuery && <button onClick={clearAll} className="font-mono text-[10px] text-ink/50 hover:text-ink">× clear</button>}
       </div>
       {query && (
         <div className="divide-y divide-ink/10 border-t border-ink/10">
