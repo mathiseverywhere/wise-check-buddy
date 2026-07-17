@@ -642,26 +642,60 @@ function ReturnsTab({ worker, returns, jobs, products, onDone }: { worker: strin
 // ---------- Marking ----------
 
 function MarkingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Products in Laser marking.</div>;
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const groups = useMemo(() => groupByReference(jobs, products), [jobs, products]);
+
+  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">No products in laser marking.</div>;
+
+  const toggle = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleGroup = (items: TestJob[]) => setSelected((s) => {
+    const n = new Set(s);
+    const all = items.every((j) => n.has(j.id));
+    for (const j of items) { if (all) n.delete(j.id); else n.add(j.id); }
+    return n;
+  });
+  async function markBatch() {
+    if (selected.size === 0) return;
+    setBusy(true);
+    try {
+      for (const id of selected) await completeMarking(id);
+      setSelected(new Set());
+      onDone();
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="space-y-3">
-      {jobs.map((j) => {
-        const p = products.find((x) => x.id === j.product_id);
-        const text = j.laser_text ?? p?.laser_text ?? p?.reference;
-        const pack = j.packing_type ?? p?.packing_type ?? "—";
-        return (
-          <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/20 bg-card p-4">
-            <div>
-              {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
-              <div className="mt-1 font-mono text-[10px] text-ink/50">Qty {j.incoming_qty ?? j.quantity_total} · Engraving: <b>{text}</b></div>
-              <div className="mt-0.5 font-mono text-[10px] text-ink/50">Next steps: {pack} · {j.shipment_mode === "air" ? "Air freight" : j.shipment_mode === "sea" ? "Sea freight" : "—"} → {j.destination_country ?? "—"}</div>
-            </div>
-            <button onClick={async () => { await completeMarking(j.id); onDone(); }} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
-              Marking done
-            </button>
-          </div>
-        );
-      })}
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-ink/15 bg-muted px-4 py-2">
+        <div className="font-mono text-[11px] text-ink/60">Select same-reference orders to confirm engraving in a batch — engraving text is identical per reference.</div>
+        <button onClick={markBatch} disabled={busy || selected.size === 0} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
+          {busy ? "…" : `Marking done · ${selected.size}`}
+        </button>
+      </div>
+      {groups.map(({ ref, product, items }) => (
+        <div key={ref} className="border border-ink/20 bg-card">
+          <BatchGroupHeader product={product} ref={ref} items={items} selected={selected} onToggleAll={() => toggleGroup(items)} />
+          <ul className="divide-y divide-ink/10">
+            {items.map((j) => {
+              const p = products.find((x) => x.id === j.product_id);
+              const text = j.laser_text ?? p?.laser_text ?? p?.reference;
+              const pack = j.packing_type ?? p?.packing_type ?? "—";
+              const checked = selected.has(j.id);
+              return (
+                <li key={j.id} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${checked ? "bg-accent/10" : ""}`}>
+                  <input type="checkbox" checked={checked} onChange={() => toggle(j.id)} className="h-4 w-4 accent-ink" />
+                  <div className="flex-1">
+                    {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
+                    <div className="mt-1 font-mono text-[10px] text-ink/50">Qty {j.incoming_qty ?? j.quantity_total} · Engraving: <b>{text}</b></div>
+                    <div className="mt-0.5 font-mono text-[10px] text-ink/50">Next steps: {pack} · {j.shipment_mode === "air" ? "Air freight" : j.shipment_mode === "sea" ? "Sea freight" : "—"} → {j.destination_country ?? "—"}</div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
