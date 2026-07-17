@@ -467,8 +467,8 @@ function OrderTab({
   const tol = product ? tolerances[product.id] : null;
 
   async function submit() {
-    if (!pid || !orderNumber.trim() || !customer.trim() || !supplier.trim()) {
-      setMsg("Order no., customer and supplier are required.");
+    if (!pid || !orderNumber.trim() || !customer.trim() || !supplier.trim() || !country.trim()) {
+      setMsg("Order no., customer, supplier and destination country are required.");
       return;
     }
     setBusy(true); setMsg(null);
@@ -485,10 +485,12 @@ function OrderTab({
         sample_width: cl.check_width ? sWidth : 0,
         laser_text: laserText.trim() || null,
         office_note: note.trim() || null,
+        shipment_mode: mode,
+        destination_country: country.trim(),
         checklist: cl,
       });
       setMsg("Order created — awaiting goods receipt.");
-      setOrderNumber(""); setCustomer(""); setSupplier(""); setLaserText(""); setNote("");
+      setOrderNumber(""); setCustomer(""); setSupplier(""); setLaserText(""); setNote(""); setCountry("");
       onDone();
     } catch (e: any) { setMsg(e.message); }
     setBusy(false);
