@@ -357,6 +357,8 @@ export async function createOrder(input: {
   sample_width: number;
   laser_text?: string | null;
   office_note?: string | null;
+  shipment_mode: "air" | "sea";
+  destination_country: string;
   checklist: Omit<Checklist, "job_id">;
 }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -378,6 +380,8 @@ export async function createOrder(input: {
       supplier: input.supplier,
       incoming_qty: input.incoming_qty,
       laser_text: input.laser_text ?? null,
+      shipment_mode: input.shipment_mode,
+      destination_country: input.destination_country,
     })
     .select("*")
     .single();
