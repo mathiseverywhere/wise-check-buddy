@@ -1,11 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
 import {
-  useProducts, useTolerancesMap, useJobs, useStations, useReturns,
+  useProducts, useTolerancesMap, useJobs, useStations, useReturns, usePallets,
   activeCheckpoints, getCheckpoint, evaluateValue,
   ensureStation, claimStation, releaseStation, completeStation,
-  markJobInTesting, advanceIfComplete, completeMarking, completePacking,
+  markJobInTesting, advanceIfComplete, completeMarking, completePacking, completePalletPacking,
   receiveOrder, transportToInspection, completeReturn, confirmShipment,
-  type Product, type TestJob, type Station, type Tolerances, type CheckpointDef, type Checklist, type JobReturn,
+  type Product, type TestJob, type Station, type Tolerances, type CheckpointDef, type Checklist, type JobReturn, type Pallet,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
 import { useBi } from "@/lib/i18n";
