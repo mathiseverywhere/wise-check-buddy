@@ -1,11 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
 import {
-  useProducts, useTolerancesMap, useJobs, useStations, useReturns,
+  useProducts, useTolerancesMap, useJobs, useStations, useReturns, usePallets,
   activeCheckpoints, getCheckpoint, evaluateValue,
   ensureStation, claimStation, releaseStation, completeStation,
-  markJobInTesting, advanceIfComplete, completeMarking, completePacking,
+  markJobInTesting, advanceIfComplete, completeMarking, completePacking, completePalletPacking,
   receiveOrder, transportToInspection, completeReturn, confirmShipment,
-  type Product, type TestJob, type Station, type Tolerances, type CheckpointDef, type Checklist, type JobReturn,
+  type Product, type TestJob, type Station, type Tolerances, type CheckpointDef, type Checklist, type JobReturn, type Pallet,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
 import { useBi } from "@/lib/i18n";
@@ -570,25 +570,72 @@ function MarkingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Pro
 // ---------- Packing ----------
 
 function PackingTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
-  if (jobs.length === 0) return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">Keine Products in Packing.</div>;
+  const pallets = usePallets();
+  const ready = pallets.data.filter((p) => p.status === "ready_to_pack");
+  const loose = jobs.filter((j) => !j.pallet_id);
+
+  if (ready.length === 0 && loose.length === 0) {
+    return <div className="border border-ink/20 bg-card p-10 text-center font-mono text-sm text-ink/40">No pallets or products waiting for packing. Office needs to bundle released jobs into pallets first.</div>;
+  }
+
   return (
-    <div className="space-y-3">
-      {jobs.map((j) => {
-        const p = products.find((x) => x.id === j.product_id);
-        const pack = j.packing_type ?? p?.packing_type ?? "—";
+    <div className="space-y-6">
+      {ready.map((pal) => {
+        const items = jobs.filter((j) => j.pallet_id === pal.id);
         return (
-          <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 border border-ink/20 bg-card p-4">
-            <div>
-              {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
-              <div className="mt-1 font-mono text-[10px] text-ink/50">Qty {j.incoming_qty ?? j.quantity_total} · Packing: <b>{pack}</b></div>
-              <div className="mt-0.5 font-mono text-[10px] text-ink/50">Shipment: {j.shipment_mode === "air" ? "Air freight" : j.shipment_mode === "sea" ? "Sea freight" : "—"} → <b>{j.destination_country ?? "—"}</b></div>
+          <div key={pal.id} className="border-2 border-ink/40 bg-card">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/20 bg-muted/40 px-4 py-3">
+              <div>
+                <div className="font-display text-lg">🟰 Pallet {pal.name}</div>
+                <div className="font-mono text-[10px] text-ink/60">
+                  Carton: {pal.carton_size} · {pal.shipment_mode === "air" ? "✈ Air freight" : "⛴ Sea freight"} → <b>{pal.destination_country}</b> · {items.length} orders
+                </div>
+              </div>
+              <button
+                onClick={async () => { await completePalletPacking(pal.id, items.map((j) => j.id)); pallets.refetch(); onDone(); }}
+                disabled={items.length === 0}
+                className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
+                Pallet packed → Ship
+              </button>
             </div>
-            <button onClick={async () => { await completePacking(j.id); onDone(); }} className="bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper hover:bg-ink/85">
-              Packed → Ship
-            </button>
+            <ul className="divide-y divide-ink/10">
+              {items.map((j) => {
+                const p = products.find((x) => x.id === j.product_id);
+                const pack = j.packing_type ?? p?.packing_type ?? "—";
+                return (
+                  <li key={j.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div>
+                      {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
+                      <div className="mt-1 font-mono text-[10px] text-ink/50">Qty {j.incoming_qty ?? j.quantity_total} · Packing: <b>{pack}</b></div>
+                    </div>
+                  </li>
+                );
+              })}
+              {items.length === 0 && <li className="px-4 py-3 font-mono text-[11px] text-ink/40">Pallet is empty.</li>}
+            </ul>
           </div>
         );
       })}
+
+      {loose.length > 0 && (
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">Waiting for pallet assembly ({loose.length})</div>
+          <div className="mt-2 space-y-2">
+            {loose.map((j) => {
+              const p = products.find((x) => x.id === j.product_id);
+              return (
+                <div key={j.id} className="flex flex-wrap items-center gap-3 border border-dashed border-ink/25 bg-card p-3">
+                  {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
+                  <span className="font-mono text-[10px] text-ink/50">
+                    {j.customer} · {j.incoming_qty} pcs · {j.shipment_mode === "air" ? "✈ Air" : "⛴ Sea"} → {j.destination_country}
+                  </span>
+                  <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.22em] text-ink/40">Office must assign to a pallet</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

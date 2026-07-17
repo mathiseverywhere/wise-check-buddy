@@ -2,17 +2,19 @@ import { useMemo, useState } from "react";
 import {
   addProduct, upsertTolerances, createOrder, bookToQc, decideJob,
   setShipment, useProducts, useTolerancesMap, useJobs, useStations, useReturns,
+  usePallets, createPallet, assignJobsToPallet, removeJobFromPallet, markPalletReadyToPack,
   CHECKPOINTS, getCheckpoint,
-  type Product, type Tolerances, type TestJob, type Checklist,
+  type Product, type Tolerances, type TestJob, type Checklist, type Pallet,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
 import { ArchiveTab } from "./ArchiveTab";
 import { useBi } from "@/lib/i18n";
 
 const PACKING = ["Single carton", "Blister", "Bulk crate", "Plastic bag"];
+const CARTON_SIZES = ["60×40×30 cm", "80×60×40 cm", "100×80×60 cm", "120×100×80 cm (EUR pallet)", "Custom"];
 
 export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
-  const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "shipment" | "archive">("overview");
+  const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "pallets" | "shipment" | "archive">("overview");
   const bi = useBi();
   const products = useProducts();
   const tol = useTolerancesMap();
@@ -51,6 +53,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
         { id: "order", label: bi("Order", "订单") },
         { id: "book", label: bi("QC planning", "质检计划"), badge: counts.stock },
         { id: "decisions", label: bi("Releases", "放行"), badge: counts.decision },
+        { id: "pallets", label: bi("Pallets", "托盘"), badge: counts.packing },
         { id: "shipment", label: bi("Shipment", "出货"), badge: counts.shipment },
         { id: "archive", label: bi("Archive", "归档"), badge: counts.done },
       ]}
@@ -61,6 +64,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
       {tab === "order" && <OrderTab products={products.data} tolerances={tol.data} onDone={jobs.refetch} />}
       {tab === "book" && <BookingTab jobs={jobs.data.filter((j) => j.status === "in_stock")} products={products.data} onDone={jobs.refetch} />}
       {tab === "decisions" && <DecisionsTab jobs={jobs.data} products={products.data} onDone={jobs.refetch} />}
+      {tab === "pallets" && <PalletsTab jobs={jobs.data} products={products.data} onDone={jobs.refetch} />}
       {tab === "shipment" && <ShipmentTab jobs={jobs.data.filter((j) => j.status === "in_shipment")} products={products.data} onDone={jobs.refetch} />}
       {tab === "archive" && <ArchiveTab jobs={jobs.data} products={products.data} />}
     </AppShell>
@@ -447,6 +451,8 @@ function OrderTab({
   const [sWidth, setSWidth] = useState(5);
   const [laserText, setLaserText] = useState("");
   const [note, setNote] = useState("");
+  const [mode, setMode] = useState<"air" | "sea">("sea");
+  const [country, setCountry] = useState("");
   const [cl, setCl] = useState<Omit<Checklist, "job_id">>({
     check_inner_dia: true, check_outer_dia: true, check_width: true,
     check_noise: false, check_vibration: false, check_radial_play: false,
@@ -461,8 +467,8 @@ function OrderTab({
   const tol = product ? tolerances[product.id] : null;
 
   async function submit() {
-    if (!pid || !orderNumber.trim() || !customer.trim() || !supplier.trim()) {
-      setMsg("Order no., customer and supplier are required.");
+    if (!pid || !orderNumber.trim() || !customer.trim() || !supplier.trim() || !country.trim()) {
+      setMsg("Order no., customer, supplier and destination country are required.");
       return;
     }
     setBusy(true); setMsg(null);
@@ -479,10 +485,12 @@ function OrderTab({
         sample_width: cl.check_width ? sWidth : 0,
         laser_text: laserText.trim() || null,
         office_note: note.trim() || null,
+        shipment_mode: mode,
+        destination_country: country.trim(),
         checklist: cl,
       });
       setMsg("Order created — awaiting goods receipt.");
-      setOrderNumber(""); setCustomer(""); setSupplier(""); setLaserText(""); setNote("");
+      setOrderNumber(""); setCustomer(""); setSupplier(""); setLaserText(""); setNote(""); setCountry("");
       onDone();
     } catch (e: any) { setMsg(e.message); }
     setBusy(false);
@@ -533,6 +541,18 @@ function OrderTab({
         <Field label="Laser marking text (free text, empty = no laser)">
           <input value={laserText} onChange={(e) => setLaserText(e.target.value)} className={inputCls} placeholder={product?.laser_text ?? "—"} />
         </Field>
+
+        <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Shipment (needed for later pallet grouping)</div>
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          <Field label="Shipping mode *">
+            <select value={mode} onChange={(e) => setMode(e.target.value as any)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
+              <option value="sea">Sea freight 海运</option>
+              <option value="air">Air freight 空运</option>
+            </select>
+          </Field>
+          <Field label="Destination country *"><input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g. Germany" className={inputCls} /></Field>
+        </div>
+
 
         <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">What should be inspected?</div>
         <div className="mt-2 grid grid-cols-2 gap-1">
@@ -660,14 +680,12 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
   const [defectNote, setDefectNote] = useState("");
   const [decisionNote, setDecisionNote] = useState("");
   const [packingType, setPackingType] = useState<string>(job.packing_type ?? product?.packing_type ?? PACKING[0]);
-  const [mode, setMode] = useState<"air" | "sea">(job.shipment_mode ?? "sea");
-  const [country, setCountry] = useState(job.destination_country ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   async function decide(kind: "pass" | "retest" | "reject") {
-    if (kind === "pass" && (!packingType.trim() || !country.trim())) {
-      setErr("Packing type and destination country are required for release.");
+    if (kind === "pass" && !packingType.trim()) {
+      setErr("Packing type is required for release.");
       return;
     }
     setErr(null);
@@ -677,9 +695,7 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
         job.id, kind, decisionNote || undefined,
         !!product?.has_laser_marking || !!job.laser_text,
         defectCount, defectNote || undefined,
-        kind === "pass"
-          ? { packing_type: packingType, shipment_mode: mode, destination_country: country.trim() }
-          : undefined,
+        kind === "pass" ? { packing_type: packingType } : undefined,
       );
       onDone();
     } finally { setBusy(false); }
@@ -733,25 +749,17 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
 
       <div className="border-t border-ink/10 bg-muted/40 p-4">
         <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/60">
-          Required for release · Packing &amp; Shipment
+          Required for release · Packing type
         </div>
-        <div className="mt-2 grid gap-3 md:grid-cols-3">
+        <div className="mt-1 font-mono text-[10px] text-ink/50">
+          Shipment: {job.shipment_mode === "air" ? "Air freight ✈" : "Sea freight ⛴"} · {job.destination_country ?? "—"} (defined at order creation)
+        </div>
+        <div className="mt-2 grid gap-3 md:grid-cols-2">
           <label className="block">
             <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Packing type *</div>
             <select value={packingType} onChange={(e) => setPackingType(e.target.value)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
               {PACKING.map((p) => <option key={p}>{p}</option>)}
             </select>
-          </label>
-          <label className="block">
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Shipping mode *</div>
-            <select value={mode} onChange={(e) => setMode(e.target.value as any)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
-              <option value="sea">Sea freight</option>
-              <option value="air">Air freight</option>
-            </select>
-          </label>
-          <label className="block">
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Destination country *</div>
-            <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g. Germany" className={inputCls} />
           </label>
         </div>
       </div>
@@ -818,6 +826,181 @@ function ShipmentCard({ job, product, onDone }: { job: TestJob; product: Product
             {busy ? "…" : job.shipment_status ? "Update" : "An Workers"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Pallets ----------
+
+function PalletsTab({ jobs, products, onDone }: { jobs: TestJob[]; products: Product[]; onDone: () => void }) {
+  const pallets = usePallets();
+  const [name, setName] = useState("");
+  const [carton, setCarton] = useState(CARTON_SIZES[0]);
+  const [mode, setMode] = useState<"air" | "sea">("sea");
+  const [country, setCountry] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+
+  const packingJobs = jobs.filter((j) => j.status === "in_packing");
+  const unassigned = packingJobs.filter((j) => !j.pallet_id);
+  const assembling = pallets.data.filter((p) => p.status === "assembling");
+  const ready = pallets.data.filter((p) => p.status === "ready_to_pack");
+  const pOf = (id: string) => products.find((p) => p.id === id);
+
+  // suggestion filter: unassigned matching mode+country
+  const filtered = country.trim()
+    ? unassigned.filter((j) => j.shipment_mode === mode && (j.destination_country ?? "").toLowerCase() === country.trim().toLowerCase())
+    : unassigned;
+
+  function toggle(id: string) {
+    const n = new Set(selected);
+    n.has(id) ? n.delete(id) : n.add(id);
+    setSelected(n);
+  }
+
+  async function build() {
+    if (!name.trim() || !country.trim() || selected.size === 0) return;
+    setBusy(true);
+    try {
+      await createPallet({
+        name: name.trim(), carton_size: carton, shipment_mode: mode, destination_country: country.trim(),
+        job_ids: Array.from(selected),
+      });
+      setName(""); setCountry(""); setSelected(new Set());
+      pallets.refetch(); onDone();
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Builder */}
+      <div className="border border-ink/25 bg-card p-5">
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">New pallet</div>
+        <h2 className="font-display text-xl">Bundle released jobs into a pallet</h2>
+        <p className="mt-1 font-mono text-[10px] text-ink/50">Group orders with the same destination and freight mode. Workers only see full pallets in the packing queue.</p>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <Field label="Pallet name *"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="PAL-2026-01" className={inputCls} /></Field>
+          <Field label="Carton / pallet size">
+            <select value={carton} onChange={(e) => setCarton(e.target.value)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
+              {CARTON_SIZES.map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </Field>
+          <Field label="Shipping mode">
+            <select value={mode} onChange={(e) => setMode(e.target.value as any)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
+              <option value="sea">Sea freight 海运</option>
+              <option value="air">Air freight 空运</option>
+            </select>
+          </Field>
+          <Field label="Destination country"><input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g. Germany" className={inputCls} /></Field>
+        </div>
+
+        <div className="mt-5 font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">
+          Released jobs waiting for pallet ({filtered.length})
+        </div>
+        {filtered.length === 0 ? (
+          <div className="mt-2 font-mono text-xs text-ink/40">No released jobs match this mode/destination.</div>
+        ) : (
+          <ul className="mt-2 divide-y divide-ink/10 border border-ink/15">
+            {filtered.map((j) => {
+              const p = pOf(j.product_id);
+              return (
+                <li key={j.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
+                  <input type="checkbox" checked={selected.has(j.id)} onChange={() => toggle(j.id)} />
+                  {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
+                  <span className="font-mono text-[10px] text-ink/60">
+                    {j.customer} · {j.incoming_qty} pcs · {j.shipment_mode === "air" ? "✈ Air" : "⛴ Sea"} · {j.destination_country}
+                  </span>
+                  <span className="ml-auto font-mono text-[10px] text-ink/50">Packing: {j.packing_type ?? "—"}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <button onClick={build} disabled={busy || selected.size === 0 || !name.trim() || !country.trim()}
+          className="mt-4 bg-ink px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-paper disabled:opacity-30 hover:bg-ink/85">
+          {busy ? "…" : `Create pallet with ${selected.size} job(s)`}
+        </button>
+      </div>
+
+      {/* Existing pallets */}
+      <PalletList title="Assembling — add more jobs" pallets={assembling} jobs={jobs} products={products}
+        unassigned={unassigned} onRefresh={() => { pallets.refetch(); onDone(); }} canRelease />
+      <PalletList title="Ready to pack — worker queue" pallets={ready} jobs={jobs} products={products}
+        unassigned={[]} onRefresh={() => { pallets.refetch(); onDone(); }} canRelease={false} />
+    </div>
+  );
+}
+
+function PalletList({ title, pallets, jobs, products, unassigned, onRefresh, canRelease }: {
+  title: string; pallets: Pallet[]; jobs: TestJob[]; products: Product[];
+  unassigned: TestJob[]; onRefresh: () => void; canRelease: boolean;
+}) {
+  if (pallets.length === 0) return null;
+  const pOf = (id: string) => products.find((p) => p.id === id);
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">{title}</div>
+      <div className="mt-2 space-y-3">
+        {pallets.map((pal) => {
+          const items = jobs.filter((j) => j.pallet_id === pal.id);
+          const candidates = unassigned.filter((j) => j.shipment_mode === pal.shipment_mode && (j.destination_country ?? "").toLowerCase() === pal.destination_country.toLowerCase());
+          return (
+            <div key={pal.id} className="border border-ink/25 bg-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="font-display text-lg">{pal.name}</div>
+                  <div className="font-mono text-[10px] text-ink/50">
+                    {pal.carton_size} · {pal.shipment_mode === "air" ? "✈ Air" : "⛴ Sea"} · {pal.destination_country} · {items.length} jobs
+                  </div>
+                </div>
+                {canRelease && (
+                  <button onClick={async () => { await markPalletReadyToPack(pal.id); onRefresh(); }}
+                    className="bg-ok px-3 py-2 font-mono text-[11px] uppercase tracking-[0.22em] text-paper hover:opacity-85">
+                    Send to worker queue
+                  </button>
+                )}
+              </div>
+              <ul className="mt-3 divide-y divide-ink/10 border border-ink/10">
+                {items.map((j) => {
+                  const p = pOf(j.product_id);
+                  return (
+                    <li key={j.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
+                      {p && <ProductChip product={p} orderNumber={j.order_number} inspectionTag={j.inspection_tag} />}
+                      <span className="font-mono text-[10px] text-ink/60">{j.customer} · {j.incoming_qty} pcs · {j.packing_type ?? "—"}</span>
+                      {canRelease && (
+                        <button onClick={async () => { await removeJobFromPallet(j.id); onRefresh(); }}
+                          className="ml-auto font-mono text-[10px] uppercase tracking-[0.22em] text-destructive hover:opacity-70">
+                          Remove
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+                {items.length === 0 && <li className="px-3 py-2 font-mono text-[11px] text-ink/40">No jobs assigned yet.</li>}
+              </ul>
+              {canRelease && candidates.length > 0 && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.2em] text-ink/50">Add matching jobs ({candidates.length})</summary>
+                  <ul className="mt-2 divide-y divide-ink/10 border border-ink/10">
+                    {candidates.map((j) => {
+                      const p = pOf(j.product_id);
+                      return (
+                        <li key={j.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
+                          {p && <ProductChip product={p} orderNumber={j.order_number} />}
+                          <span className="font-mono text-[10px] text-ink/60">{j.customer} · {j.incoming_qty} pcs</span>
+                          <button onClick={async () => { await assignJobsToPallet(pal.id, [j.id]); onRefresh(); }}
+                            className="ml-auto font-mono text-[10px] uppercase tracking-[0.22em] text-ok hover:opacity-70">Add</button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </details>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
