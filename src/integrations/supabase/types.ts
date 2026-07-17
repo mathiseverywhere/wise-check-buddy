@@ -164,6 +164,48 @@ export type Database = {
           },
         ]
       }
+      pallets: {
+        Row: {
+          carton_size: string
+          created_at: string
+          destination_country: string
+          id: string
+          name: string
+          note: string | null
+          packed_at: string | null
+          shipment_mode: string
+          shipped_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          carton_size: string
+          created_at?: string
+          destination_country: string
+          id?: string
+          name: string
+          note?: string | null
+          packed_at?: string | null
+          shipment_mode: string
+          shipped_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          carton_size?: string
+          created_at?: string
+          destination_country?: string
+          id?: string
+          name?: string
+          note?: string | null
+          packed_at?: string | null
+          shipment_mode?: string
+          shipped_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_tolerances: {
         Row: {
           hardness_inner_max: number | null
@@ -305,6 +347,7 @@ export type Database = {
           order_number: string | null
           packed_at: string | null
           packing_type: string | null
+          pallet_id: string | null
           product_id: string
           quantity_total: number
           received_at: string | null
@@ -342,6 +385,7 @@ export type Database = {
           order_number?: string | null
           packed_at?: string | null
           packing_type?: string | null
+          pallet_id?: string | null
           product_id: string
           quantity_total?: number
           received_at?: string | null
@@ -379,6 +423,7 @@ export type Database = {
           order_number?: string | null
           packed_at?: string | null
           packing_type?: string | null
+          pallet_id?: string | null
           product_id?: string
           quantity_total?: number
           received_at?: string | null
@@ -399,6 +444,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "test_jobs_pallet_id_fkey"
+            columns: ["pallet_id"]
+            isOneToOne: false
+            referencedRelation: "pallets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "test_jobs_product_id_fkey"
             columns: ["product_id"]
