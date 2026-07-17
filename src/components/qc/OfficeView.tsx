@@ -148,7 +148,7 @@ function JobLocator({ jobs, products }: { jobs: TestJob[]; products: Product[] }
         </label>
         {anyQuery && <button onClick={clearAll} className="font-mono text-[10px] text-ink/50 hover:text-ink">× clear</button>}
       </div>
-      {query && (
+      {anyQuery && (
         <div className="divide-y divide-ink/10 border-t border-ink/10">
           {results.length === 0 && (
             <div className="px-4 py-3 font-mono text-xs text-ink/40">No matches.</div>
