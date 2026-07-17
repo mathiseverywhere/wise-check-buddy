@@ -680,14 +680,12 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
   const [defectNote, setDefectNote] = useState("");
   const [decisionNote, setDecisionNote] = useState("");
   const [packingType, setPackingType] = useState<string>(job.packing_type ?? product?.packing_type ?? PACKING[0]);
-  const [mode, setMode] = useState<"air" | "sea">(job.shipment_mode ?? "sea");
-  const [country, setCountry] = useState(job.destination_country ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   async function decide(kind: "pass" | "retest" | "reject") {
-    if (kind === "pass" && (!packingType.trim() || !country.trim())) {
-      setErr("Packing type and destination country are required for release.");
+    if (kind === "pass" && !packingType.trim()) {
+      setErr("Packing type is required for release.");
       return;
     }
     setErr(null);
@@ -697,9 +695,7 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
         job.id, kind, decisionNote || undefined,
         !!product?.has_laser_marking || !!job.laser_text,
         defectCount, defectNote || undefined,
-        kind === "pass"
-          ? { packing_type: packingType, shipment_mode: mode, destination_country: country.trim() }
-          : undefined,
+        kind === "pass" ? { packing_type: packingType } : undefined,
       );
       onDone();
     } finally { setBusy(false); }
