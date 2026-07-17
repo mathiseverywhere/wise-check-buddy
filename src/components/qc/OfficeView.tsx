@@ -53,6 +53,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
         { id: "order", label: bi("Order", "订单") },
         { id: "book", label: bi("QC planning", "质检计划"), badge: counts.stock },
         { id: "decisions", label: bi("Releases", "放行"), badge: counts.decision },
+        { id: "pallets", label: bi("Pallets", "托盘"), badge: counts.packing },
         { id: "shipment", label: bi("Shipment", "出货"), badge: counts.shipment },
         { id: "archive", label: bi("Archive", "归档"), badge: counts.done },
       ]}
@@ -63,6 +64,7 @@ export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
       {tab === "order" && <OrderTab products={products.data} tolerances={tol.data} onDone={jobs.refetch} />}
       {tab === "book" && <BookingTab jobs={jobs.data.filter((j) => j.status === "in_stock")} products={products.data} onDone={jobs.refetch} />}
       {tab === "decisions" && <DecisionsTab jobs={jobs.data} products={products.data} onDone={jobs.refetch} />}
+      {tab === "pallets" && <PalletsTab jobs={jobs.data} products={products.data} onDone={jobs.refetch} />}
       {tab === "shipment" && <ShipmentTab jobs={jobs.data.filter((j) => j.status === "in_shipment")} products={products.data} onDone={jobs.refetch} />}
       {tab === "archive" && <ArchiveTab jobs={jobs.data} products={products.data} />}
     </AppShell>
