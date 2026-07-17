@@ -77,6 +77,20 @@ export type TestJob = {
   destination_country: string | null;
   shipped_at: string | null;
   shipment_status: "prepared" | "shipped" | null;
+  pallet_id: string | null;
+};
+
+export type Pallet = {
+  id: string;
+  name: string;
+  carton_size: string;
+  shipment_mode: "air" | "sea";
+  destination_country: string;
+  status: "assembling" | "ready_to_pack" | "packed" | "shipped";
+  note: string | null;
+  created_at: string;
+  packed_at: string | null;
+  shipped_at: string | null;
 };
 
 export type Station = {
