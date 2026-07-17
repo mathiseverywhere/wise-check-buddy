@@ -749,25 +749,17 @@ function DecisionCard({ job, product, stations, onDone }: { job: TestJob; produc
 
       <div className="border-t border-ink/10 bg-muted/40 p-4">
         <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink/60">
-          Required for release · Packing &amp; Shipment
+          Required for release · Packing type
         </div>
-        <div className="mt-2 grid gap-3 md:grid-cols-3">
+        <div className="mt-1 font-mono text-[10px] text-ink/50">
+          Shipment: {job.shipment_mode === "air" ? "Air freight ✈" : "Sea freight ⛴"} · {job.destination_country ?? "—"} (defined at order creation)
+        </div>
+        <div className="mt-2 grid gap-3 md:grid-cols-2">
           <label className="block">
             <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Packing type *</div>
             <select value={packingType} onChange={(e) => setPackingType(e.target.value)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
               {PACKING.map((p) => <option key={p}>{p}</option>)}
             </select>
-          </label>
-          <label className="block">
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Shipping mode *</div>
-            <select value={mode} onChange={(e) => setMode(e.target.value as any)} className="mt-1 w-full border border-ink/25 bg-transparent px-2 py-2 font-mono text-sm">
-              <option value="sea">Sea freight</option>
-              <option value="air">Air freight</option>
-            </select>
-          </label>
-          <label className="block">
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">Destination country *</div>
-            <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g. Germany" className={inputCls} />
           </label>
         </div>
       </div>
