@@ -2,17 +2,19 @@ import { useMemo, useState } from "react";
 import {
   addProduct, upsertTolerances, createOrder, bookToQc, decideJob,
   setShipment, useProducts, useTolerancesMap, useJobs, useStations, useReturns,
+  usePallets, createPallet, assignJobsToPallet, removeJobFromPallet, markPalletReadyToPack,
   CHECKPOINTS, getCheckpoint,
-  type Product, type Tolerances, type TestJob, type Checklist,
+  type Product, type Tolerances, type TestJob, type Checklist, type Pallet,
 } from "@/lib/qcData";
 import { AppShell, ProductChip, StatusPill } from "./Shell";
 import { ArchiveTab } from "./ArchiveTab";
 import { useBi } from "@/lib/i18n";
 
 const PACKING = ["Single carton", "Blister", "Bulk crate", "Plastic bag"];
+const CARTON_SIZES = ["60×40×30 cm", "80×60×40 cm", "100×80×60 cm", "120×100×80 cm (EUR pallet)", "Custom"];
 
 export function OfficeView({ onSwitchRole }: { onSwitchRole: () => void }) {
-  const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "shipment" | "archive">("overview");
+  const [tab, setTab] = useState<"overview" | "products" | "order" | "book" | "decisions" | "pallets" | "shipment" | "archive">("overview");
   const bi = useBi();
   const products = useProducts();
   const tol = useTolerancesMap();
