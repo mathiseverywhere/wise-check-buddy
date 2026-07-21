@@ -357,7 +357,8 @@ function JobDetail({
   const today = new Date().toISOString().slice(0, 10);
   const doneCount = stations.filter((s) => s.status === "done" && activeKeys.includes(s.checkpoint_key)).length;
   const failCount = stations.filter((s) => s.result === "fail").length;
-  const myClaimedToday = stations.some((s) => s.status === "claimed" && s.claimed_by === worker && s.claimed_date === today);
+  const claimedCount = stations.filter((s) => s.status === "claimed").length;
+  const activeWorkers = Array.from(new Set(stations.filter((s) => s.status === "claimed" && s.claimed_by).map((s) => s.claimed_by as string)));
 
   async function onClaim(s: Station) {
     await claimStation(s.id, worker, today);
@@ -405,7 +406,8 @@ function JobDetail({
       {checklist?.extra_instructions && <div className="border-b border-ink/10 bg-muted px-6 py-2 font-mono text-xs">Instruction: {checklist.extra_instructions}</div>}
 
       <div className="border-b border-ink/10 px-6 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">
-        Stations · {doneCount}/{active.length} · Deviations: {failCount}
+        Stations · {doneCount}/{active.length} · Deviations: {failCount} · In progress: {claimedCount}
+        {activeWorkers.length > 0 && <span className="ml-2 normal-case tracking-normal text-ink/60">— parallel: {activeWorkers.join(", ")}</span>}
       </div>
 
       <ul className="divide-y divide-ink/10">
@@ -436,8 +438,8 @@ function JobDetail({
                   cp={cp}
                   tolerances={tolerances}
                   job={job}
-                  canClaim={!blocked && station.status === "open" && !myClaimedToday}
-                  claimHint={station.status === "open" ? (myClaimedToday ? "Already working on a station today." : blocked ? "Blockiert durch Full check." : undefined) : undefined}
+                  canClaim={!blocked && station.status === "open"}
+                  claimHint={station.status === "open" ? (blocked ? "Blocked by full check." : undefined) : undefined}
                   isMine={mine}
                   onClaim={() => onClaim(station)}
                   onRelease={() => onRelease(station)}
