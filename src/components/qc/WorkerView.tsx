@@ -438,8 +438,8 @@ function JobDetail({
                   cp={cp}
                   tolerances={tolerances}
                   job={job}
-                  canClaim={!blocked && station.status === "open" && !myClaimedToday}
-                  claimHint={station.status === "open" ? (myClaimedToday ? "Already working on a station today." : blocked ? "Blockiert durch Full check." : undefined) : undefined}
+                  canClaim={!blocked && station.status === "open"}
+                  claimHint={station.status === "open" ? (blocked ? "Blocked by full check." : undefined) : undefined}
                   isMine={mine}
                   onClaim={() => onClaim(station)}
                   onRelease={() => onRelease(station)}
