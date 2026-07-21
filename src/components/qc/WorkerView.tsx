@@ -357,7 +357,8 @@ function JobDetail({
   const today = new Date().toISOString().slice(0, 10);
   const doneCount = stations.filter((s) => s.status === "done" && activeKeys.includes(s.checkpoint_key)).length;
   const failCount = stations.filter((s) => s.result === "fail").length;
-  const myClaimedToday = stations.some((s) => s.status === "claimed" && s.claimed_by === worker && s.claimed_date === today);
+  const claimedCount = stations.filter((s) => s.status === "claimed").length;
+  const activeWorkers = Array.from(new Set(stations.filter((s) => s.status === "claimed" && s.claimed_by).map((s) => s.claimed_by as string)));
 
   async function onClaim(s: Station) {
     await claimStation(s.id, worker, today);
