@@ -406,7 +406,8 @@ function JobDetail({
       {checklist?.extra_instructions && <div className="border-b border-ink/10 bg-muted px-6 py-2 font-mono text-xs">Instruction: {checklist.extra_instructions}</div>}
 
       <div className="border-b border-ink/10 px-6 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-ink/50">
-        Stations · {doneCount}/{active.length} · Deviations: {failCount}
+        Stations · {doneCount}/{active.length} · Deviations: {failCount} · In progress: {claimedCount}
+        {activeWorkers.length > 0 && <span className="ml-2 normal-case tracking-normal text-ink/60">— parallel: {activeWorkers.join(", ")}</span>}
       </div>
 
       <ul className="divide-y divide-ink/10">
